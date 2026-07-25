@@ -1,0 +1,45 @@
+{
+  "name": "Eurolux Internal Glazing Project Tracker",
+  "short_name": "Eurolux Glazing",
+  "description": "Track internal glazing work \u2014 partitions, doors, showers and balustrades \u2014 from site.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#23262B",
+  "theme_color": "#23262B",
+  "categories": [
+    "business",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Board",
+      "url": "./index.html#/board"
+    },
+    {
+      "name": "Sites",
+      "url": "./index.html#/sites"
+    }
+  ]
+}

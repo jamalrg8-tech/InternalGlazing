@@ -1,0 +1,665 @@
+{
+ "app": "glazing-tracker",
+ "version": 1,
+ "exported_at": "2026-07-23T00:00:00.000Z",
+ "data": {
+  "sites": [
+   {
+    "id": "47f88e0b-5190-4ffe-a34c-09f72020ed54",
+    "name": "Jasmine Leaf 3, Villa 9",
+    "community": "Jasmine Leaf 3",
+    "main_contractor": "GTS",
+    "is_archived": false
+   },
+   {
+    "id": "70fbb656-e950-4cee-b33d-5df9a62eec98",
+    "name": "Villa 06, Cluster 43, Jumeirah Islands",
+    "community": "Jumeirah Islands",
+    "main_contractor": "GTS",
+    "is_archived": false
+   },
+   {
+    "id": "f2629185-f0c0-4f23-ae0b-f9477d8052b1",
+    "name": "Villa 9, Jasmine Leaf 3, Al Barrari",
+    "community": "Al Barrari",
+    "main_contractor": "GTS",
+    "is_archived": false
+   },
+   {
+    "id": "f686781a-cffa-4ffd-80d0-efffc3a892cb",
+    "name": "Villa 12, Estella, Victory Heights",
+    "community": "Victory Heights",
+    "main_contractor": "GTS",
+    "is_archived": false
+   },
+   {
+    "id": "332d23ea-9a2a-40b9-917d-4562b855d4ed",
+    "name": "Villa 15, The Mansions, Jumeirah Islands",
+    "community": "Jumeirah Islands",
+    "main_contractor": "GTS",
+    "is_archived": false
+   },
+   {
+    "id": "d2b37c03-3fe3-4a35-97a5-d48b53189d2d",
+    "name": "Palm Jumeirah, Frond A, Villa 6",
+    "community": "Palm Jumeirah",
+    "main_contractor": "MACS",
+    "is_archived": false
+   },
+   {
+    "id": "37845341-0b4b-4640-b398-394c554779ff",
+    "name": "Villa 1876, Al Furjan",
+    "community": "Al Furjan",
+    "main_contractor": "MACS",
+    "is_archived": false
+   },
+   {
+    "id": "65574ceb-885d-44c0-be8a-3eafe94ed557",
+    "name": "Meadows 1, Street 14, Villa 3",
+    "community": "Meadows 1",
+    "main_contractor": "MACS",
+    "is_archived": false
+   },
+   {
+    "id": "34e9be7e-1310-4b83-9d09-90ecdf7de212",
+    "name": "Terranova Villa 9, Street 4, Arabian Ranches",
+    "community": "Arabian Ranches",
+    "main_contractor": "JMS",
+    "is_archived": false
+   },
+   {
+    "id": "bc3a67e3-9f8e-4b0f-9020-4c5b9e84fe8f",
+    "name": "Villa 16, Cluster 38, Jumeirah Islands",
+    "community": "Jumeirah Islands",
+    "main_contractor": "BUILD STUDIO",
+    "is_archived": false
+   },
+   {
+    "id": "a1db6001-7fd8-4521-8986-ee30af0a4f82",
+    "name": "Villa 10, Cluster 25, Jumeirah Islands",
+    "community": "Jumeirah Islands",
+    "main_contractor": "GTS",
+    "is_archived": false
+   },
+   {
+    "id": "fa93dd58-7b12-422a-a6d2-3d2f796d386a",
+    "name": "C35, DISTRICT 6, JUMEIRAH PARK",
+    "community": "JUMEIRAH PARK",
+    "main_contractor": "MACS",
+    "is_archived": false
+   },
+   {
+    "id": "953155a4-3a9e-4d12-ba9f-d7a7a822d8b1",
+    "name": "Green Community 3307",
+    "community": null,
+    "main_contractor": null,
+    "is_archived": false
+   },
+   {
+    "id": "c32582e7-50eb-42ea-ac4c-5db231406717",
+    "name": "Sobha Hartland 12 villa",
+    "community": null,
+    "main_contractor": "MAC & GTS",
+    "is_archived": false
+   },
+   {
+    "id": "a0aa1425-0640-450e-8701-66604e5a719e",
+    "name": "Villa 55, Frond O, Palm Jumeirah",
+    "community": "Palm Jumeirah",
+    "main_contractor": "Cherwell",
+    "is_archived": false
+   },
+   {
+    "id": "ff7e2d41-fd83-4d3f-a95d-664eb52a35cb",
+    "name": "V33 & V34",
+    "community": null,
+    "main_contractor": null,
+    "is_archived": false
+   },
+   {
+    "id": "df298220-b6b5-4d8c-84ae-3fc77c40010f",
+    "name": "V36",
+    "community": null,
+    "main_contractor": null,
+    "is_archived": false
+   },
+   {
+    "id": "fdb527b1-0694-4d55-8c46-d10b978f73eb",
+    "name": "V35",
+    "community": null,
+    "main_contractor": null,
+    "is_archived": false
+   },
+   {
+    "id": "51312781-05f1-4ab2-8dc1-c486b8f13af7",
+    "name": "Unassigned / General",
+    "community": null,
+    "main_contractor": null,
+    "is_archived": false
+   },
+   {
+    "id": "a9d41013-f9a5-4721-9b07-c31fb71ed88d",
+    "name": "V33/34/35",
+    "community": null,
+    "main_contractor": null,
+    "is_archived": false
+   },
+   {
+    "id": "eb951c12-96c5-4606-bce3-ef8f6edefdb6",
+    "name": "V43 & V44",
+    "community": null,
+    "main_contractor": null,
+    "is_archived": false
+   },
+   {
+    "id": "02861a3a-0205-4b95-a208-79acc870481c",
+    "name": "V44",
+    "community": null,
+    "main_contractor": null,
+    "is_archived": false
+   },
+   {
+    "id": "00c64f93-6010-4d75-8fe5-1165d3c21783",
+    "name": "V38-V39",
+    "community": null,
+    "main_contractor": null,
+    "is_archived": false
+   },
+   {
+    "id": "c40726e3-e20e-4935-bea7-ec1591422203",
+    "name": "V43",
+    "community": null,
+    "main_contractor": null,
+    "is_archived": false
+   },
+   {
+    "id": "b89f746e-0be2-4d06-9e24-95f2bfc5b588",
+    "name": "V34",
+    "community": null,
+    "main_contractor": null,
+    "is_archived": false
+   },
+   {
+    "id": "9d96ff88-4626-43df-bc14-413d6108a227",
+    "name": "V37",
+    "community": null,
+    "main_contractor": null,
+    "is_archived": false
+   },
+   {
+    "id": "6bbcc3db-08cf-4663-93f4-be0e4f163ba2",
+    "name": "V38",
+    "community": null,
+    "main_contractor": null,
+    "is_archived": false
+   },
+   {
+    "id": "33bbce87-b59b-4725-87fc-59f074dfaddf",
+    "name": "V39",
+    "community": null,
+    "main_contractor": null,
+    "is_archived": false
+   }
+  ],
+  "activities": [
+   {
+    "id": "27fd65c4-bbbc-49a7-8d2f-50ad5cfc9ecf",
+    "site_id": "47f88e0b-5190-4ffe-a34c-09f72020ed54",
+    "category": "Internal Door",
+    "scope_description": "32x Fixed CW Window (WA)\n5x Single Hinged Door (WA)\n7x sliding door (BES)\n1x Motorized Sliding door (BES)",
+    "installation_date": "2026-06-19",
+    "target_finish_date": "2026-07-31",
+    "status": "Completed"
+   },
+   {
+    "id": "4eaa95b2-77ec-43f4-9d94-c0ab4ab8857a",
+    "site_id": "70fbb656-e950-4cee-b33d-5df9a62eec98",
+    "category": "Other",
+    "scope_description": "Maids bath fixed glass",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "Needs Review"
+   },
+   {
+    "id": "4f872bce-45f0-4aa3-9968-3827a01b3799",
+    "site_id": "f2629185-f0c0-4f23-ae0b-f9477d8052b1",
+    "category": "Internal Partition",
+    "scope_description": "Door with partition -6 nos, single doors -6 nos, doors with georgian bars and frames -3 nos",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "LPO Pending"
+   },
+   {
+    "id": "1f0a3ef8-d25e-4e11-a766-0fcca12dad88",
+    "site_id": "f686781a-cffa-4ffd-80d0-efffc3a892cb",
+    "category": "Internal Door",
+    "scope_description": "3 nos doors installation balance( two lads one day ),  one LPO pending for masterbath additional fixed glass",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "LPO Pending"
+   },
+   {
+    "id": "b652ddb3-23a9-4a31-a5a4-62baa458442f",
+    "site_id": "332d23ea-9a2a-40b9-917d-4562b855d4ed",
+    "category": "Other",
+    "scope_description": "need design confirmation and LPO",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "LPO Pending"
+   },
+   {
+    "id": "472b3041-87ea-4f7a-b531-36dfee086f75",
+    "site_id": "d2b37c03-3fe3-4a35-97a5-d48b53189d2d",
+    "category": "Shower Partition",
+    "scope_description": "stairs Balustrade glass is in production delivery -31/7/26 installation by 6/8/26",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "Rejected / Resubmit"
+   },
+   {
+    "id": "3fd30791-bdd1-4665-81f7-8062ed3ac206",
+    "site_id": "37845341-0b4b-4640-b398-394c554779ff",
+    "category": "Other",
+    "scope_description": "wine celler glass balance, will submit the drawing by- 27/7/26",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "Needs Review"
+   },
+   {
+    "id": "3008fb07-183b-4371-b3fd-ba1b774a0073",
+    "site_id": "65574ceb-885d-44c0-be8a-3eafe94ed557",
+    "category": "Other",
+    "scope_description": "4 bathrooms.  measurement -will be on 27/8/26",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "Measurement"
+   },
+   {
+    "id": "cfe14ca7-379f-4872-bbc1-1aeb90d8a617",
+    "site_id": "34e9be7e-1310-4b83-9d09-90ecdf7de212",
+    "category": "Staircase Glass Balustrade",
+    "scope_description": "stairs glass delivered, office partitions and stairs installations are balance",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "Delivered"
+   },
+   {
+    "id": "1232f35a-1afe-4807-be56-4c870c66d70b",
+    "site_id": "bc3a67e3-9f8e-4b0f-9020-4c5b9e84fe8f",
+    "category": "Shower Partition",
+    "scope_description": "shower enclosure for masterbath, three lads needed - 28/7/26( installation )",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "Needs Review"
+   },
+   {
+    "id": "12603059-c4b4-41d4-82c0-5e0040af82d1",
+    "site_id": "a1db6001-7fd8-4521-8986-ee30af0a4f82",
+    "category": "Other",
+    "scope_description": "lipseal installation balance ( one guy half day only )",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "Needs Review"
+   },
+   {
+    "id": "ea410141-4a38-40cb-9665-9182b4882894",
+    "site_id": "fa93dd58-7b12-422a-a6d2-3d2f796d386a",
+    "category": "Other",
+    "scope_description": "site will ready by next week for measurement",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "Measurement"
+   },
+   {
+    "id": "cad6a992-3e40-486e-bf1a-b48292939558",
+    "site_id": "953155a4-3a9e-4d12-ba9f-d7a7a822d8b1",
+    "category": "Other",
+    "scope_description": "glass will arrange by 3/8/26( installation needed two lads, one day )",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "Material Ordered"
+   },
+   {
+    "id": "605fc001-c9b8-4cd6-9c5c-472129874863",
+    "site_id": "c32582e7-50eb-42ea-ac4c-5db231406717",
+    "category": "Other",
+    "scope_description": "(scope to be confirmed)",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "Needs Review"
+   },
+   {
+    "id": "49f52053-aeda-4776-a7c7-e9119ea3129f",
+    "site_id": "a0aa1425-0640-450e-8701-66604e5a719e",
+    "category": "Other",
+    "scope_description": "final measurements by 27/7/26",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "Measurement"
+   },
+   {
+    "id": "4033c24a-0e33-43ce-bb2d-d6e1d3a6b367",
+    "site_id": "ff7e2d41-fd83-4d3f-a95d-664eb52a35cb",
+    "category": "Shower Partition",
+    "scope_description": "Shower Installation",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "Completed"
+   },
+   {
+    "id": "8daf0501-a677-46b0-9d52-72b23b67898e",
+    "site_id": "df298220-b6b5-4d8c-84ae-3fc77c40010f",
+    "category": "Shower Partition",
+    "scope_description": "Shower Glass Delivery",
+    "installation_date": "null",
+    "target_finish_date": "2026-07-23",
+    "status": "Needs Review"
+   },
+   {
+    "id": "b5ac9aeb-c0a1-4491-a62f-8644d9fa2fe2",
+    "site_id": "fdb527b1-0694-4d55-8c46-d10b978f73eb",
+    "category": "Shower Partition",
+    "scope_description": "shower Glass done",
+    "installation_date": "null",
+    "target_finish_date": "2026-07-18",
+    "status": "Completed"
+   },
+   {
+    "id": "65d486b4-4b82-41cf-9630-b934a3735e33",
+    "site_id": "fdb527b1-0694-4d55-8c46-d10b978f73eb",
+    "category": "Shower Partition",
+    "scope_description": "Shower Framing",
+    "installation_date": "null",
+    "target_finish_date": "2026-07-18",
+    "status": "Needs Review"
+   },
+   {
+    "id": "99d541af-3d99-41cd-b2c4-d23cc38a52ee",
+    "site_id": "fdb527b1-0694-4d55-8c46-d10b978f73eb",
+    "category": "Staircase Glass Balustrade",
+    "scope_description": "Staircase Glass Delivery",
+    "installation_date": "null",
+    "target_finish_date": "2026-07-21",
+    "status": "Needs Review"
+   },
+   {
+    "id": "ca2519bc-683e-49ee-a0d8-93102a5d80e5",
+    "site_id": "51312781-05f1-4ab2-8dc1-c486b8f13af7",
+    "category": "Other",
+    "scope_description": "PVD Color Bolts Approved",
+    "installation_date": "null",
+    "target_finish_date": "2026-07-16",
+    "status": "Needs Review"
+   },
+   {
+    "id": "ecee84d1-aa93-4448-af92-9a373d0edde5",
+    "site_id": "51312781-05f1-4ab2-8dc1-c486b8f13af7",
+    "category": "Other",
+    "scope_description": "PVD Bolts Delivery",
+    "installation_date": "null",
+    "target_finish_date": "2026-07-25",
+    "status": "Needs Review"
+   },
+   {
+    "id": "7ebfe2bb-c225-4126-811c-e08aafaa694c",
+    "site_id": "a9d41013-f9a5-4721-9b07-c31fb71ed88d",
+    "category": "Staircase Glass Balustrade",
+    "scope_description": "Staircase Glass Installation",
+    "installation_date": "2026-07-26",
+    "target_finish_date": "null",
+    "status": "Needs Review"
+   },
+   {
+    "id": "c51ec2df-05f2-4ee2-a1b2-551f88a86bdc",
+    "site_id": "eb951c12-96c5-4606-bce3-ef8f6edefdb6",
+    "category": "Balustrade",
+    "scope_description": "Front Balcony Glass Installation",
+    "installation_date": "2026-07-27",
+    "target_finish_date": "2026-07-30",
+    "status": "Needs Review"
+   },
+   {
+    "id": "05e11374-107d-48d8-ab83-64b8cf5d081c",
+    "site_id": "02861a3a-0205-4b95-a208-79acc870481c",
+    "category": "Shower Partition",
+    "scope_description": "Shower Glass Delivery",
+    "installation_date": "null",
+    "target_finish_date": "2026-07-22",
+    "status": "Needs Review"
+   },
+   {
+    "id": "0099ac20-cf8b-486f-900b-2092e180f0ca",
+    "site_id": "02861a3a-0205-4b95-a208-79acc870481c",
+    "category": "Shower Partition",
+    "scope_description": "Shower Installation",
+    "installation_date": "2026-08-10",
+    "target_finish_date": "2026-08-17",
+    "status": "Needs Review"
+   },
+   {
+    "id": "f0c20441-337b-47f0-911d-4cfc843d19e2",
+    "site_id": "00c64f93-6010-4d75-8fe5-1165d3c21783",
+    "category": "Balustrade",
+    "scope_description": "Balcony Channel Phase 2",
+    "installation_date": "2026-07-22",
+    "target_finish_date": "null",
+    "status": "Needs Review"
+   },
+   {
+    "id": "e2770385-1ffd-4762-88cc-cb39327faea3",
+    "site_id": "c40726e3-e20e-4935-bea7-ec1591422203",
+    "category": "Shower Partition",
+    "scope_description": "Shower delivery",
+    "installation_date": "2026-02-27",
+    "target_finish_date": "null",
+    "status": "Needs Review"
+   },
+   {
+    "id": "0e1cee05-a5ce-4a80-841d-8c4cc1e1cf31",
+    "site_id": "df298220-b6b5-4d8c-84ae-3fc77c40010f",
+    "category": "Balustrade",
+    "scope_description": "Balcony installation",
+    "installation_date": "2026-07-17",
+    "target_finish_date": "2026-07-20",
+    "status": "Needs Review"
+   },
+   {
+    "id": "c609dee2-ec65-4b5c-970b-ed7e41a495c5",
+    "site_id": "df298220-b6b5-4d8c-84ae-3fc77c40010f",
+    "category": "Shower Partition",
+    "scope_description": "Shower Install",
+    "installation_date": "2026-07-23",
+    "target_finish_date": "2026-07-31",
+    "status": "Needs Review"
+   },
+   {
+    "id": "c3fcd9a3-83b3-4d9f-bfdc-731612f4e47e",
+    "site_id": "02861a3a-0205-4b95-a208-79acc870481c",
+    "category": "Shower Partition",
+    "scope_description": "Shower Delivery",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "Needs Review"
+   },
+   {
+    "id": "a713eaa8-61c7-41c1-be33-37e4de23e6f8",
+    "site_id": "df298220-b6b5-4d8c-84ae-3fc77c40010f",
+    "category": "Staircase Glass Balustrade",
+    "scope_description": "Staircase Welding",
+    "installation_date": "2026-07-17",
+    "target_finish_date": "2026-07-20",
+    "status": "Needs Review"
+   },
+   {
+    "id": "426ab7c0-b434-4a4e-a138-a8ffb655088e",
+    "site_id": "b89f746e-0be2-4d06-9e24-95f2bfc5b588",
+    "category": "Other",
+    "scope_description": "Handle/Mesh",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "Completed"
+   },
+   {
+    "id": "3c1fd070-8594-4adf-8a82-6832760c6d74",
+    "site_id": "fdb527b1-0694-4d55-8c46-d10b978f73eb",
+    "category": "Shower Partition",
+    "scope_description": "Shower Glass",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "Needs Review"
+   },
+   {
+    "id": "d72ce901-7795-4957-99fd-e825cb8d99b1",
+    "site_id": "9d96ff88-4626-43df-bc14-413d6108a227",
+    "category": "Staircase Glass Balustrade",
+    "scope_description": "Staircase Welding",
+    "installation_date": "2026-07-22",
+    "target_finish_date": "2026-07-26",
+    "status": "Needs Review"
+   },
+   {
+    "id": "5a5eb5de-359f-4132-b58a-23516205b31f",
+    "site_id": "9d96ff88-4626-43df-bc14-413d6108a227",
+    "category": "Balustrade",
+    "scope_description": "Balcony Glass Delivery",
+    "installation_date": "null",
+    "target_finish_date": "2026-07-31",
+    "status": "Needs Review"
+   },
+   {
+    "id": "e3dcd5dc-0ef5-499a-8aa4-4b09e392e738",
+    "site_id": "6bbcc3db-08cf-4663-93f4-be0e4f163ba2",
+    "category": "Shower Partition",
+    "scope_description": "Shower Glass Measurement",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "Measurement"
+   },
+   {
+    "id": "07c23eff-896d-4af1-8d1b-d6c3e26671a8",
+    "site_id": "33bbce87-b59b-4725-87fc-59f074dfaddf",
+    "category": "Shower Partition",
+    "scope_description": "Shower Glass delivery",
+    "installation_date": "null",
+    "target_finish_date": "null",
+    "status": "Measurement"
+   },
+   {
+    "id": "956d1853-d6cb-4e06-8c2e-15f126044658",
+    "site_id": "51312781-05f1-4ab2-8dc1-c486b8f13af7",
+    "category": "Other",
+    "scope_description": "Villa 10, Cluster 25",
+    "installation_date": "2026-07-20",
+    "target_finish_date": "null",
+    "status": "Needs Review"
+   }
+  ],
+  "activity_updates": [
+   {
+    "id": "615c93cce5ef494fa55c262e7578c3e5",
+    "activity_id": "27fd65c4-bbbc-49a7-8d2f-50ad5cfc9ecf",
+    "update_text": "* EFP done, BES frame pending for motorized sliding door because of the opening issue. Steve and Paddy will speak to the customer by 7th July. \n* Item 21 Sliding Door frame was fixed and GTS requested to remove to give access for some equipments to enter the Villa.\n* 1 Broken glass (July 13) collection 1pcs Jumbo delivery pending from Sejal.\n* Roof floor material awaiting delivery by July 27 from WA and July 20 from BES",
+    "created_at": "2026-07-23T00:00:00.000Z"
+   },
+   {
+    "id": "5401366550b4491baea59d04c962df21",
+    "activity_id": "4eaa95b2-77ec-43f4-9d94-c0ab4ab8857a",
+    "update_text": "waiting for the LPO",
+    "created_at": "2026-07-23T00:00:00.000Z"
+   },
+   {
+    "id": "dc55e81078f34d3c8ca696df6409b0f8",
+    "activity_id": "4eaa95b2-77ec-43f4-9d94-c0ab4ab8857a",
+    "update_text": "one day work, two lads needed",
+    "created_at": "2026-07-23T00:00:00.000Z"
+   },
+   {
+    "id": "57eb9b8a6aaa4b39a57440606a0e8079",
+    "activity_id": "4f872bce-45f0-4aa3-9968-3827a01b3799",
+    "update_text": "waiting for the LPO (  needs one month timeline )",
+    "created_at": "2026-07-23T00:00:00.000Z"
+   },
+   {
+    "id": "08bf6cf8ed954253aadbbe23545c8396",
+    "activity_id": "472b3041-87ea-4f7a-b531-36dfee086f75",
+    "update_text": "23/7/26 - shower frame rejected. resubmit -28/7/26( 5 bathroom partitions )",
+    "created_at": "2026-07-23T00:00:00.000Z"
+   },
+   {
+    "id": "faae53872ffa49cabd0c34578932e0cb",
+    "activity_id": "4033c24a-0e33-43ce-bb2d-d6e1d3a6b367",
+    "update_text": "Completed",
+    "created_at": "2026-07-23T00:00:00.000Z"
+   },
+   {
+    "id": "447e38705e8042ca9227d730455d0728",
+    "activity_id": "4033c24a-0e33-43ce-bb2d-d6e1d3a6b367",
+    "update_text": "Team noted in spreadsheet: Akash - Installer",
+    "created_at": "2026-07-23T00:00:00.000Z"
+   },
+   {
+    "id": "b26739c9e2ce4bbab52f0221d04579b6",
+    "activity_id": "8daf0501-a677-46b0-9d52-72b23b67898e",
+    "update_text": "Team noted in spreadsheet: Ramesh - Installer",
+    "created_at": "2026-07-23T00:00:00.000Z"
+   },
+   {
+    "id": "d7074b6c0e1c4e8e9efddf0d08cc1dcb",
+    "activity_id": "b5ac9aeb-c0a1-4491-a62f-8644d9fa2fe2",
+    "update_text": "Team noted in spreadsheet: Anandhu - Installer + welder",
+    "created_at": "2026-07-23T00:00:00.000Z"
+   },
+   {
+    "id": "9b3403c94428417e9655b6b909a780c8",
+    "activity_id": "65d486b4-4b82-41cf-9630-b934a3735e33",
+    "update_text": "Team noted in spreadsheet: Rajeev - installer + welder",
+    "created_at": "2026-07-23T00:00:00.000Z"
+   },
+   {
+    "id": "3dbb361c9a374cfda777e122a8bbbb14",
+    "activity_id": "99d541af-3d99-41cd-b2c4-d23cc38a52ee",
+    "update_text": "Team noted in spreadsheet: Sarin - installer (new)",
+    "created_at": "2026-07-23T00:00:00.000Z"
+   },
+   {
+    "id": "bb8fd586eff94ec5832f7aa094a6e2ea",
+    "activity_id": "ca2519bc-683e-49ee-a0d8-93102a5d80e5",
+    "update_text": "Team noted in spreadsheet: Dipin - welder + Helper (new)",
+    "created_at": "2026-07-23T00:00:00.000Z"
+   },
+   {
+    "id": "bc731a41f8644febb37fe5166be71bf4",
+    "activity_id": "ecee84d1-aa93-4448-af92-9a373d0edde5",
+    "update_text": "Team noted in spreadsheet: Gopi - Driver",
+    "created_at": "2026-07-23T00:00:00.000Z"
+   },
+   {
+    "id": "154f37988985415c8019af9e10311c07",
+    "activity_id": "7ebfe2bb-c225-4126-811c-e08aafaa694c",
+    "update_text": "each villa need 4days for installation",
+    "created_at": "2026-07-23T00:00:00.000Z"
+   },
+   {
+    "id": "676672f8f1154d21937a7ee9f63da990",
+    "activity_id": "426ab7c0-b434-4a4e-a138-a8ffb655088e",
+    "update_text": "Done",
+    "created_at": "2026-07-23T00:00:00.000Z"
+   },
+   {
+    "id": "0244543b54cc4e63bbecc5a72833fb37",
+    "activity_id": "e3dcd5dc-0ef5-499a-8aa4-4b09e392e738",
+    "update_text": "Ceiling not ready",
+    "created_at": "2026-07-23T00:00:00.000Z"
+   },
+   {
+    "id": "06acd7f4b7b74a09929383b7fc37192a",
+    "activity_id": "07c23eff-896d-4af1-8d1b-d6c3e26671a8",
+    "update_text": "Ceiling not ready for measurement",
+    "created_at": "2026-07-23T00:00:00.000Z"
+   }
+  ],
+  "activity_team": [],
+  "profiles": [],
+  "attachments": []
+ }
+}
