@@ -6,7 +6,7 @@
    keeps its own offline copy and queue.
    ===================================================================== */
 
-var VERSION = 'glazing-v6-reports';
+var VERSION = 'glazing-v7-edit-projects';
 var SHELL = VERSION + '-shell';
 var VENDOR = VERSION + '-vendor';
 

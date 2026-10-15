@@ -624,3 +624,9 @@ main { padding: var(--pad); max-width: 1100px; margin: 0 auto; }
   .chip-status { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .barfill, .prog span { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* Project card quick actions */
+.card-actions { display: flex; gap: 4px; justify-content: flex-end; padding: 0 10px 8px 20px; margin-top: -6px; position: relative; z-index: 2; }
+.card-actions .linkbtn { padding: 6px 8px; font-size: .8rem; min-height: 32px; }
+.linkbtn.danger { color: var(--alert); }
+.card:has(.card-actions) .card-link { position: static; }

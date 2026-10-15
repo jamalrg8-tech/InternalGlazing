@@ -589,17 +589,23 @@
         var acts = state.data.activities.filter(function (a) { return a.site_id === s.id; });
         var openCount = acts.filter(function (a) { return a.status !== 'Completed'; }).length;
         return '<article class="card"><a class="card-link" href="#/site/' + esc(s.id) + '">' +
-          '<span class="spine" style="--spine-c:' + (openCount ? 'var(--glass)' : 'var(--st-complete)') + '"></span>' +
+          '<span class="spine" style="--spine-c:' + (!acts.length ? 'var(--st-hold)' : openCount ? 'var(--glass)' : 'var(--st-complete)') + '"></span>' +
           '<div class="card-body">' +
             '<div class="card-top"><span class="card-title">' + esc(s.name) + '</span></div>' +
             '<div class="card-site">' + esc(s.community || 'Community not set') +
               (s.main_contractor ? ' · ' + esc(s.main_contractor) : '') + '</div>' +
             '<div class="card-meta">' +
-              '<span class="chip">' + acts.length + ' item' + (acts.length === 1 ? '' : 's') + '</span>' +
-              (openCount ? '<span class="chip chip-cat">' + openCount + ' open</span>'
-                         : '<span class="chip" style="background:var(--glass-wash);color:var(--st-complete)">All done</span>') +
+              (acts.length
+                ? '<span class="chip">' + acts.length + ' task' + (acts.length === 1 ? '' : 's') + '</span>' +
+                  (openCount ? '<span class="chip chip-cat">' + openCount + ' open</span>'
+                             : '<span class="chip" style="background:var(--glass-wash);color:var(--st-complete)">All done</span>')
+                : '<span class="chip">No tasks yet</span>') +
             '</div>' +
-          '</div></a></article>';
+          '</div></a>' +
+          '<div class="card-actions">' +
+            '<button class="linkbtn" data-nav="#/site/' + esc(s.id) + '/edit">Edit</button>' +
+            '<button class="linkbtn danger" data-delsite="' + esc(s.id) + '">Delete</button>' +
+          '</div></article>';
       }).join('');
     }
 
@@ -611,6 +617,9 @@
 
     var qEl = document.getElementById('f-q');
     qEl.addEventListener('input', function () { state.filters.q = qEl.value; viewSites(); });
+    root.querySelectorAll('[data-delsite]').forEach(function (b) {
+      b.addEventListener('click', function () { deleteProject(b.getAttribute('data-delsite')); });
+    });
     var fab = document.getElementById('fab');
     if (fab) fab.addEventListener('click', function () { location.hash = '#/site/new'; });
   }
@@ -628,7 +637,11 @@
       '<dt>Contractor</dt><dd>' + esc(s.main_contractor || '—') + '</dd>' +
       '<dt>Client</dt><dd>' + esc(s.client || '—') + '</dd>' +
       '<dt>Address</dt><dd>' + esc(s.address || '—') + '</dd>' +
-      '</dl></div>';
+      '</dl>' +
+      '<div class="btnrow" style="margin-top:6px">' +
+        '<button class="btn btn-ghost" data-nav="#/site/' + esc(id) + '/edit">Edit project</button>' +
+        '<button class="btn btn-danger" id="del-site">Delete project</button>' +
+      '</div></div>';
 
     html += '<div class="sechead"><h2>Tasks</h2><span class="count mono">' + acts.length + '</span></div>';
     html += acts.length
@@ -643,6 +656,33 @@
 
     var fab = document.getElementById('fab');
     if (fab) fab.addEventListener('click', function () { location.hash = '#/activity/new?site=' + id; });
+    document.getElementById('del-site').addEventListener('click', function () { deleteProject(id); });
+  }
+
+  /* Deletes a project. If it still has tasks, says how many and removes
+     them too (with their updates, team and attachments), after confirming. */
+  function deleteProject(id) {
+    var s = siteById(id);
+    if (!s) return;
+    var acts = state.data.activities.filter(function (a) { return a.site_id === id; });
+    var msg = acts.length
+      ? 'Delete "' + s.name + '" and its ' + acts.length + ' task' + (acts.length === 1 ? '' : 's') +
+        '?\n\nThe tasks, their updates and attachments will be deleted for everyone. This cannot be undone.'
+      : 'Delete the project "' + s.name + '"?\n\nThis cannot be undone.';
+    if (!confirm(msg)) return;
+    var ids = {};
+    acts.forEach(function (a) { ids[a.id] = 1; });
+    var ops = [];
+    state.data.activity_updates.forEach(function (u) { if (ids[u.activity_id]) ops.push(Sync.remove('activity_updates', u.id)); });
+    state.data.attachments.forEach(function (at) { if (ids[at.activity_id]) ops.push(Sync.remove('attachments', at.id)); });
+    state.data.activity_team.forEach(function (t) { if (ids[t.activity_id]) ops.push(Sync.removeTeamMember(t.activity_id, t.user_id)); });
+    acts.forEach(function (a) { ops.push(Sync.remove('activities', a.id)); });
+    Promise.all(ops).then(function () { return Sync.remove('sites', id); }).then(function () {
+      toast('Project deleted');
+      if (state.filters.site === id) state.filters.site = '';
+      if (/^#\/site\//.test(location.hash)) go('#/sites', true);
+      else refreshAndRender();
+    });
   }
 
   /* =====================================================================
@@ -1029,8 +1069,11 @@
       '<div class="btnrow">' +
         '<button class="btn btn-primary" id="save">' + (editing ? 'Save changes' : 'Add project') + '</button>' +
         '<button class="btn btn-ghost" data-back="' + (editing ? '#/site/' + id : '#/sites') + '">Cancel</button>' +
+        (editing ? '<button class="btn btn-danger" id="del-site">Delete project</button>' : '') +
       '</div></div></main>' + tabbar('sites');
     root.innerHTML = html;
+    var delSite = document.getElementById('del-site');
+    if (delSite) delSite.addEventListener('click', function () { deleteProject(id); });
 
     document.getElementById('save').addEventListener('click', function () {
       var name = document.getElementById('s-name').value.trim();
