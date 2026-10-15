@@ -98,13 +98,16 @@ to the top of the dashboard so you can fix them as you go.
 
 ## What it does
 
-- **Sites and work items** — every job belongs to a site, tagged with a type of
+- **Projects and tasks** — every task belongs to a project (villa / site),
+  created straight from the dashboard, tagged with a type of
   work (partitions, doors, showers, balustrades, staircase glass, **Snagging**,
   or anything typed in), with install and target finish dates.
 - **Stage tracking** — LPO Pending → Measurement → Material Ordered → Delivered →
   In Progress → Completed, plus On Hold, Rejected / Resubmit and Needs Review.
 - **Update log** — timestamped notes against each job; nothing overwrites anything.
-- **Team** — assign installers to a job (as a label; there are no logins).
+- **Team** — assign one or more people to a task; type in a new name (and role)
+  if someone isn't on the list yet. Names are shared with the whole team.
+- **Back and Home buttons** on every screen; the app always opens on the dashboard.
 - **Photos & documents** — attach site photos, LPOs, drawings and snags, kept on
   the device.
 - **Dashboard, board and filters** — by site, status, category, contractor.

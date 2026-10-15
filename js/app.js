@@ -93,6 +93,80 @@
     return state.profile && (state.profile.role === 'admin' || state.profile.role === 'supervisor');
   }
 
+  /* Everyone who can be put on a task: people added by name, plus anyone
+     who has set their name on their own phone. */
+  function teamPeople() {
+    return state.data.profiles.filter(function (p) {
+      return p.full_name && p.full_name.trim() && !p.archived;
+    }).sort(function (x, y) { return x.full_name.localeCompare(y.full_name); });
+  }
+  function assigneeNames(activityId) {
+    return teamFor(activityId).map(function (t) { return personName(t.user_id); });
+  }
+
+  /* Checkbox list of team members, plus a box to add a new name. */
+  function peoplePicker(selected) {
+    var people = teamPeople();
+    return '<div class="people" id="people">' +
+      (people.length ? people.map(function (p) { return personChip(p, !!selected[p.id]); }).join('')
+                     : '<p class="eyebrow" id="people-empty" style="margin:4px 0">Nobody added yet — type a name below.</p>') +
+      '</div>' +
+      '<div class="addperson">' +
+        '<input id="np-name" placeholder="Add a team member\'s name" autocomplete="off" aria-label="New team member name">' +
+        '<input id="np-role" placeholder="Role, e.g. Installer (optional)" autocomplete="off" aria-label="Role">' +
+        '<button type="button" class="btn btn-ghost" id="np-add">Add person</button>' +
+      '</div>';
+  }
+  function personChip(p, on) {
+    return '<label class="person' + (on ? ' on' : '') + '">' +
+      '<input type="checkbox" data-user="' + esc(p.id) + '"' + (on ? ' checked' : '') + '>' +
+      '<span><strong>' + esc(p.full_name) + '</strong>' +
+      (p.job_title ? '<span class="eyebrow">' + esc(p.job_title) + '</span>' : '') + '</span></label>';
+  }
+  /* onAdd(personId) runs after a new name is added and ticked. */
+  function wirePeoplePicker(onAdd) {
+    var box = document.getElementById('people');
+    box.addEventListener('change', function (e) {
+      var l = e.target.closest('.person');
+      if (l) l.classList.toggle('on', e.target.checked);
+    });
+    var nameEl = document.getElementById('np-name'), roleEl = document.getElementById('np-role');
+    function add() {
+      var name = nameEl.value.trim();
+      if (!name) { toast('Type the person\'s name'); nameEl.focus(); return; }
+      var existing = teamPeople().filter(function (p) { return p.full_name.toLowerCase() === name.toLowerCase(); })[0];
+      var done = existing ? Promise.resolve(existing) : Sync.insert('profiles', {
+        full_name: name, job_title: roleEl.value.trim() || null, role: 'member',
+        created_by: state.user ? state.user.id : null, created_at: new Date().toISOString()
+      });
+      done.then(function (p) {
+        return loadLocal().then(function () {
+          var cb = box.querySelector('input[data-user="' + p.id + '"]');
+          if (!cb) {
+            var empty = document.getElementById('people-empty');
+            if (empty) empty.remove();
+            box.insertAdjacentHTML('beforeend', personChip(p, true));
+            cb = box.querySelector('input[data-user="' + p.id + '"]');
+          } else {
+            cb.checked = true; cb.closest('.person').classList.add('on');
+          }
+          nameEl.value = ''; roleEl.value = '';
+          toast(existing ? name + ' ticked' : name + ' added');
+          if (onAdd) onAdd(p.id);
+        });
+      });
+    }
+    document.getElementById('np-add').addEventListener('click', add);
+    nameEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+  }
+  function pickedPeople() {
+    var out = [];
+    document.querySelectorAll('#people input[data-user]').forEach(function (cb) {
+      if (cb.checked) out.push(cb.getAttribute('data-user'));
+    });
+    return out;
+  }
+
   function teamFor(activityId) {
     return state.data.activity_team.filter(function (t) { return t.activity_id === activityId; });
   }
@@ -134,11 +208,18 @@
     return '<a class="netpill ' + l[0] + '" href="#/settings" title="Sync status"><span class="dot"></span>' + esc(l[1]) + '</a>';
   }
 
+  /* Every screen except the dashboard gets Back (previous screen) and
+     Home (dashboard). Back goes to wherever the person came from; if they
+     opened this screen directly, it falls back to `backHref` or the dashboard. */
   function appbar(title, sub, backHref, actionsHtml) {
     return '<div class="appbar">' +
-      (backHref ? '<button class="iconbtn" data-nav="' + esc(backHref) + '" aria-label="Back">&#8592;</button>' : '') +
+      '<button class="iconbtn backbtn" data-back="' + esc(backHref || '#/') + '" aria-label="Back">' +
+        '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
+        '<span class="backlbl">Back</span></button>' +
       '<h1>' + esc(title) + (sub ? '<span class="sub">' + esc(sub) + '</span>' : '') + '</h1>' +
       (actionsHtml || '') + netPill() +
+      '<button class="iconbtn" data-nav="#/" aria-label="Dashboard" title="Dashboard">' +
+        '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg></button>' +
       '</div>';
   }
 
@@ -181,9 +262,9 @@
 
   function tabbar(active) {
     var tabs = [
-      { href: '#/', key: 'dash', label: 'Work', icon: 'M3 5h18M3 12h18M3 19h12' },
+      { href: '#/', key: 'dash', label: 'Dashboard', icon: 'M3 5h18M3 12h18M3 19h12' },
       { href: '#/board', key: 'board', label: 'Board', icon: 'M4 4h5v16H4zM10 4h5v10h-5zM16 4h4v7h-4z' },
-      { href: '#/sites', key: 'sites', label: 'Sites', icon: 'M4 20V9l8-5 8 5v11H4z' },
+      { href: '#/sites', key: 'sites', label: 'Projects', icon: 'M4 20V9l8-5 8 5v11H4z' },
       { href: '#/settings', key: 'set', label: 'Settings', icon: 'M4 12a8 8 0 0113.7-5.7M20 12a8 8 0 01-13.7 5.7M18 4v4h-4M6 20v-4h4' }
     ];
     return '<nav class="tabbar">' + tabs.map(function (t) {
@@ -218,7 +299,7 @@
       '<div class="card-body">' +
         '<div class="card-top"><span class="card-title">' + esc(scope) + '</span>' +
         '</div>' +
-        '<div class="card-site">' + esc(s ? s.name : 'Unknown site') +
+        '<div class="card-site">' + esc(s ? s.name : 'Unknown project') +
           (s && s.main_contractor ? ' · ' + esc(s.main_contractor) : '') + '</div>' +
         '<div class="card-meta">' +
           statusChip(a.status) +
@@ -226,6 +307,10 @@
           flagFor(a) +
           '<span class="datepair">Target <b>' + fmtDate(a.target_finish_date) + '</b></span>' +
         '</div>' +
+        (function () {
+          var names = assigneeNames(a.id);
+          return names.length ? '<div class="assignees"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>' + esc(names.join(', ')) + '</div>' : '';
+        })() +
       '</div></a></article>';
   }
 
@@ -292,10 +377,10 @@
       .sort(function (a, b) { return a.name.localeCompare(b.name); })
       .map(function (s) { return { value: s.id, label: s.name }; });
 
-    return '<div class="searchwrap"><input type="search" id="f-q" placeholder="Search scope, site or contractor" value="' + esc(f.q) + '"></div>' +
+    return '<div class="searchwrap"><input type="search" id="f-q" placeholder="Search task, project or contractor" value="' + esc(f.q) + '"></div>' +
       '<div class="filters">' +
       '<select id="f-status"><option value="">All statuses</option>' + opts(STATUSES.map(function (s) { return s.name; }), f.status) + '</select>' +
-      '<select id="f-site"><option value="">All sites</option>' + opts(siteOpts, f.site) + '</select>' +
+      '<select id="f-site"><option value="">All projects</option>' + opts(siteOpts, f.site) + '</select>' +
       '<select id="f-cat"><option value="">All types</option>' + opts(allCategories(), f.category) + '</select>' +
       '<select id="f-con"><option value="">All contractors</option>' + opts(contractors(), f.contractor) + '</select>' +
       '<select id="f-mine"><option value="">Everyone</option><option value="1"' + (f.mine ? ' selected' : '') + '>Assigned to me</option></select>' +
@@ -393,13 +478,17 @@
     var html = masthead();
 
     html += '<main>';
+    html += '<div class="quick">' +
+      '<button class="btn btn-primary" id="q-task"><span aria-hidden="true">+</span> New task</button>' +
+      '<button class="btn btn-ghost" id="q-site"><span aria-hidden="true">+</span> New project</button>' +
+      '</div>';
     html += filterBar();
 
     if (!list.length) {
       html += emptyState(
-        state.data.activities.length ? 'Nothing matches those filters' : 'No work logged yet',
-        state.data.activities.length ? 'Clear a filter to see more.' : 'Add your first job to start tracking it.',
-        isOffice() ? '<a class="btn btn-primary" href="#/activity/new">Add work</a>' : ''
+        state.data.activities.length ? 'Nothing matches those filters' : 'No tasks yet',
+        state.data.activities.length ? 'Clear a filter to see more.' : 'Add your first task to start tracking it.',
+        ''
       );
     } else {
       if (attention.length) {
@@ -407,7 +496,7 @@
         html += attention.map(activityCard).join('');
       }
       if (live.length) {
-        html += '<div class="sechead"><h2>In flight</h2><span class="count mono">' + live.length + '</span></div>';
+        html += '<div class="sechead"><h2>Work in Progress</h2><span class="count mono">' + live.length + '</span></div>';
         html += live.map(activityCard).join('');
       }
       if (done.length) {
@@ -418,13 +507,15 @@
 
     html += footer();
     html += '</main>';
-    if (isOffice()) html += '<button class="fab" id="fab" aria-label="Add work">+</button>';
+    if (isOffice()) html += '<button class="fab" id="fab" aria-label="New task">+</button>';
     html += tabbar('dash');
     root.innerHTML = html;
 
     wireFilters(viewDashboard);
     var fab = document.getElementById('fab');
     if (fab) fab.addEventListener('click', function () { location.hash = '#/activity/new'; });
+    document.getElementById('q-task').addEventListener('click', function () { location.hash = '#/activity/new'; });
+    document.getElementById('q-site').addEventListener('click', function () { location.hash = '#/site/new'; });
 
   }
 
@@ -441,7 +532,7 @@
       return 0;
     });
 
-    var html = appbar('Board', 'By stage', null, '');
+    var html = appbar('Board', 'By stage', '#/', '');
     html += '<main>';
     html += filterBar();
     html += '<div class="board">';
@@ -471,13 +562,13 @@
       return (s.name + ' ' + (s.community || '') + ' ' + (s.main_contractor || '')).toLowerCase().indexOf(q) !== -1;
     }).sort(function (a, b) { return a.name.localeCompare(b.name); });
 
-    var html = appbar('Sites', sites.length + ' active', null, '');
+    var html = appbar('Projects', sites.length + ' active', '#/', '');
     html += '<main>';
-    html += '<div class="searchwrap"><input type="search" id="f-q" placeholder="Search sites" value="' + esc(state.filters.q) + '"></div>';
+    html += '<div class="searchwrap"><input type="search" id="f-q" placeholder="Search projects" value="' + esc(state.filters.q) + '"></div>';
 
     if (!sites.length) {
-      html += emptyState('No sites yet', 'Add a villa or site to group its work.',
-        isOffice() ? '<a class="btn btn-primary" href="#/site/new">Add site</a>' : '');
+      html += emptyState('No projects yet', 'Add a villa or project to group its tasks.',
+        isOffice() ? '<a class="btn btn-primary" href="#/site/new">New project</a>' : '');
     } else {
       html += sites.map(function (s) {
         var acts = state.data.activities.filter(function (a) { return a.site_id === s.id; });
@@ -499,7 +590,7 @@
 
     html += footer();
     html += '</main>';
-    if (isOffice()) html += '<button class="fab" id="fab" aria-label="Add site">+</button>';
+    if (isOffice()) html += '<button class="fab" id="fab" aria-label="New project">+</button>';
     html += tabbar('sites');
     root.innerHTML = html;
 
@@ -511,11 +602,11 @@
 
   function viewSiteDetail(id) {
     var s = siteById(id);
-    if (!s) { root.innerHTML = appbar('Site', '', '#/sites') + '<main>' + emptyState('Site not found', 'It may have been removed.') + '</main>' + tabbar('sites'); return; }
+    if (!s) { root.innerHTML = appbar('Project', '', '#/sites') + '<main>' + emptyState('Project not found', 'It may have been removed.') + '</main>' + tabbar('sites'); return; }
 
     var acts = state.data.activities.filter(function (a) { return a.site_id === id; });
     var html = appbar(s.name, s.community || '', '#/sites',
-      isOffice() ? '<button class="iconbtn" data-nav="#/site/' + esc(id) + '/edit" aria-label="Edit site">&#9998;</button>' : '');
+      isOffice() ? '<button class="iconbtn" data-nav="#/site/' + esc(id) + '/edit" aria-label="Edit project">&#9998;</button>' : '');
 
     html += '<main>';
     html += '<div class="panel"><dl class="kv">' +
@@ -524,14 +615,14 @@
       '<dt>Address</dt><dd>' + esc(s.address || '—') + '</dd>' +
       '</dl></div>';
 
-    html += '<div class="sechead"><h2>Work items</h2><span class="count mono">' + acts.length + '</span></div>';
+    html += '<div class="sechead"><h2>Tasks</h2><span class="count mono">' + acts.length + '</span></div>';
     html += acts.length
       ? acts.map(activityCard).join('')
-      : emptyState('Nothing logged here yet', 'Add the first item of work for this site.',
-          isOffice() ? '<a class="btn btn-primary" href="#/activity/new?site=' + esc(id) + '">Add work</a>' : '');
+      : emptyState('No tasks here yet', 'Add the first task for this project.',
+          isOffice() ? '<a class="btn btn-primary" href="#/activity/new?site=' + esc(id) + '">New task</a>' : '');
 
     html += '</main>';
-    if (isOffice()) html += '<button class="fab" id="fab" aria-label="Add work">+</button>';
+    if (isOffice()) html += '<button class="fab" id="fab" aria-label="New task">+</button>';
     html += tabbar('sites');
     root.innerHTML = html;
 
@@ -545,14 +636,14 @@
   function viewActivity(id) {
     var a = activityById(id);
     if (!a) {
-      root.innerHTML = appbar('Work item', '', '#/') + '<main>' + emptyState('Not found', 'This item may have been removed.') + '</main>' + tabbar('dash');
+      root.innerHTML = appbar('Task', '', '#/') + '<main>' + emptyState('Not found', 'This task may have been removed.') + '</main>' + tabbar('dash');
       return;
     }
     var s = siteById(a.site_id);
     var m = statusMeta(a.status);
     var pipeline = STATUSES.filter(function (x) { return x.stage >= 0; });
 
-    var html = appbar(s ? s.name : 'Work item', a.category, '#/',
+    var html = appbar(s ? s.name : 'Task', a.category, '#/',
       '<button class="iconbtn" data-nav="#/activity/' + esc(id) + '/edit" aria-label="Edit">&#9998;</button>');
     html += '<main>';
 
@@ -596,9 +687,8 @@
             (t.role_on_job ? ' · ' + esc(t.role_on_job) : '') + '</span>';
         }).join('') + '</div>'
       : '<p class="eyebrow">Nobody assigned</p>';
-    if (isOffice()) {
-      html += '<div class="btnrow"><button class="btn btn-ghost" data-nav="#/activity/' + esc(id) + '/team">Manage team</button></div>';
-    }
+    html += '<div class="btnrow"><button class="btn btn-ghost" data-nav="#/activity/' + esc(id) + '/team">' +
+      (team.length ? 'Change who is assigned' : 'Assign team members') + '</button></div>';
     html += '</div>';
 
     /* --- attachments --- */
@@ -741,9 +831,9 @@
 
     var sites = state.data.sites.slice().sort(function (x, y) { return x.name.localeCompare(y.name); });
     if (!sites.length) {
-      root.innerHTML = appbar('Add work', '', '#/') + '<main>' +
-        emptyState('Add a site first', 'Work items belong to a site, so create one before logging work.',
-          '<a class="btn btn-primary" href="#/site/new">Add site</a>') +
+      root.innerHTML = appbar('New task', '', '#/') + '<main>' +
+        emptyState('Add a project first', 'Tasks belong to a project, so create one before adding a task.',
+          '<a class="btn btn-primary" href="#/site/new">New project</a>') +
         '</main>' + tabbar('dash');
       return;
     }
@@ -760,11 +850,14 @@
     };
 
     var isCustomCat = !!v.category && CATEGORIES.indexOf(v.category) === -1;
+    var assignedNow = {};
+    if (editing) teamFor(id).forEach(function (t) { assignedNow[t.user_id] = 1; });
 
-    var html = appbar(editing ? 'Edit work' : 'Add work', '', editing ? '#/activity/' + id : '#/');
+    var html = appbar(editing ? 'Edit task' : 'New task', '', editing ? '#/activity/' + id : '#/');
     html += '<main><div class="panel">' +
-      '<div class="field"><label for="f-site2">Site</label><select id="f-site2">' +
+      '<div class="field"><label for="f-site2">Project</label><select id="f-site2">' +
         sites.map(function (s) { return '<option value="' + esc(s.id) + '"' + (s.id === v.site_id ? ' selected' : '') + '>' + esc(s.name) + '</option>'; }).join('') +
+        '<option value="__new">+ New project…</option>' +
       '</select></div>' +
       '<div class="field"><label for="f-cat2">Type of work</label><select id="f-cat2">' +
         CATEGORIES.map(function (c) { return '<option value="' + esc(c) + '"' + (c === v.category ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') +
@@ -784,14 +877,25 @@
         STATUSES.map(function (s) { return '<option' + (s.name === v.status ? ' selected' : '') + '>' + esc(s.name) + '</option>'; }).join('') +
       '</select></div>' +
       (editing ? '<div class="field"><label for="f-act">Actual finish</label><input id="f-act" type="date" value="' + esc((realDate(v.actual_finish_date) || '').slice(0, 10)) + '"></div>' : '') +
+      '<div class="field"><label>Assigned to</label>' + peoplePicker(assignedNow) + '</div>' +
       '<div class="btnrow">' +
-        '<button class="btn btn-primary" id="save">' + (editing ? 'Save changes' : 'Add work') + '</button>' +
-        '<button class="btn btn-ghost" data-nav="' + (editing ? '#/activity/' + id : '#/') + '">Cancel</button>' +
+        '<button class="btn btn-primary" id="save">' + (editing ? 'Save changes' : 'Add task') + '</button>' +
+        '<button class="btn btn-ghost" data-back="' + (editing ? '#/activity/' + id : '#/') + '">Cancel</button>' +
         (editing && isOffice() ? '<button class="btn btn-danger" id="del">Delete</button>' : '') +
       '</div>' +
     '</div></main>' + tabbar('dash');
 
     root.innerHTML = html;
+
+    wirePeoplePicker();
+    var siteSel = document.getElementById('f-site2');
+    var lastSite = siteSel.value;
+    siteSel.addEventListener('change', function () {
+      if (siteSel.value !== '__new') { lastSite = siteSel.value; return; }
+      siteSel.value = lastSite;
+      if (!editing) { state.returnTo = 'task'; go('#/site/new', true); }
+      else { toast('Save this task first, then add the project from the dashboard'); }
+    });
 
     var catSel = document.getElementById('f-cat2');
     var catCustom = document.getElementById('f-cat-custom');
@@ -829,19 +933,32 @@
             created_at: new Date().toISOString()
           }));
 
+      var picked = pickedPeople();
       p.then(function (rec) {
-        toast(editing ? 'Saved' : 'Work added');
-        location.hash = '#/activity/' + (editing ? id : rec.id);
+        var taskId = editing ? id : rec.id;
+        var had = {};
+        teamFor(taskId).forEach(function (t) { had[t.user_id] = 1; });
+        var want = {};
+        picked.forEach(function (u) { want[u] = 1; });
+        var ops = [];
+        picked.forEach(function (u) {
+          if (!had[u]) ops.push(Sync.insert('activity_team', { activity_id: taskId, user_id: u, role_on_job: null }));
+        });
+        Object.keys(had).forEach(function (u) { if (!want[u]) ops.push(Sync.removeTeamMember(taskId, u)); });
+        return Promise.all(ops).then(function () { return rec; });
+      }).then(function (rec) {
+        toast(editing ? 'Saved' : 'Task added');
+        go('#/activity/' + (editing ? id : rec.id), true);
       });
     });
 
     var delBtn = document.getElementById('del');
     if (delBtn) {
       delBtn.addEventListener('click', function () {
-        if (!confirm('Delete this work item and its updates? This cannot be undone.')) return;
+        if (!confirm('Delete this task and its updates? This cannot be undone.')) return;
         Sync.remove('activities', id).then(function () {
           toast('Deleted');
-          location.hash = '#/';
+          go('#/', true);
         });
       });
     }
@@ -854,34 +971,26 @@
     var a = activityById(id);
     if (!a) { location.hash = '#/'; return; }
     var assigned = {};
-    teamFor(id).forEach(function (t) { assigned[t.user_id] = t; });
+    teamFor(id).forEach(function (t) { assigned[t.user_id] = 1; });
 
-    var people = state.data.profiles.slice().sort(function (x, y) {
-      return (x.full_name || '').localeCompare(y.full_name || '');
-    });
-
-    var html = appbar('Team', a.category, '#/activity/' + id);
-    html += '<main><div class="panel">';
-    html += people.length ? people.map(function (p) {
-      var on = !!assigned[p.id];
-      return '<label style="display:flex;align-items:center;gap:12px;min-height:var(--tap);border-bottom:1px solid var(--alu-line)">' +
-        '<input type="checkbox" data-user="' + esc(p.id) + '"' + (on ? ' checked' : '') + ' style="width:22px;height:22px">' +
-        '<span style="flex:1"><strong>' + esc(p.full_name || 'Unnamed') + '</strong>' +
-        '<span class="eyebrow" style="display:block">' + esc(p.job_title || p.role) + '</span></span></label>';
-    }).join('') : '<p class="eyebrow">No team members have signed up yet.</p>';
-    html += '</div></main>' + tabbar('dash');
+    var html = appbar('Team', a.scope_description || a.category, '#/activity/' + id);
+    html += '<main><div class="panel"><h2>Who is doing this task?</h2>' +
+      '<p style="font-size:.85rem;color:var(--ink-3);margin-top:0">Tick people to assign them. Not on the list? Add their name below.</p>' +
+      peoplePicker(assigned) + '</div>' +
+      '<div class="btnrow"><button class="btn btn-primary" data-back="#/activity/' + esc(id) + '">Done</button></div>' +
+      '</main>' + tabbar('dash');
     root.innerHTML = html;
 
-    root.querySelectorAll('input[type=checkbox][data-user]').forEach(function (cb) {
-      cb.addEventListener('change', function () {
-        var uid = cb.getAttribute('data-user');
-        var p = cb.checked
-          ? Sync.insert('activity_team', { activity_id: id, user_id: uid, role_on_job: null })
-          : Sync.removeTeamMember(id, uid);
-        p.then(function () {
-          toast(cb.checked ? 'Assigned' : 'Removed');
-          return loadLocal();
-        });
+    function assign(uid, on) {
+      return (on ? Sync.insert('activity_team', { activity_id: id, user_id: uid, role_on_job: null })
+                 : Sync.removeTeamMember(id, uid)).then(loadLocal);
+    }
+    wirePeoplePicker(function (uid) { assign(uid, true); });
+    document.getElementById('people').addEventListener('change', function (e) {
+      var cb = e.target;
+      if (!cb.matches('input[data-user]')) return;
+      assign(cb.getAttribute('data-user'), cb.checked).then(function () {
+        toast(cb.checked ? 'Assigned' : 'Removed');
       });
     });
   }
@@ -895,22 +1004,22 @@
     if (editing && !s) { location.hash = '#/sites'; return; }
     var v = s || { name: '', community: '', client: '', main_contractor: '', address: '' };
 
-    var html = appbar(editing ? 'Edit site' : 'Add site', '', editing ? '#/site/' + id : '#/sites');
+    var html = appbar(editing ? 'Edit project' : 'New project', '', editing ? '#/site/' + id : '#/sites');
     html += '<main><div class="panel">' +
-      '<div class="field"><label for="s-name">Site name</label><input id="s-name" value="' + esc(v.name) + '" placeholder="e.g. Villa 16, Cluster 38"></div>' +
+      '<div class="field"><label for="s-name">Project name</label><input id="s-name" value="' + esc(v.name) + '" placeholder="e.g. Villa 16, Cluster 38"></div>' +
       '<div class="field"><label for="s-comm">Community</label><input id="s-comm" value="' + esc(v.community || '') + '" placeholder="e.g. Jumeirah Islands"></div>' +
       '<div class="field"><label for="s-con">Main contractor</label><input id="s-con" value="' + esc(v.main_contractor || '') + '" placeholder="e.g. GTS, MACS, JMS"></div>' +
       '<div class="field"><label for="s-client">Client</label><input id="s-client" value="' + esc(v.client || '') + '"></div>' +
       '<div class="field"><label for="s-addr">Address</label><input id="s-addr" value="' + esc(v.address || '') + '"></div>' +
       '<div class="btnrow">' +
-        '<button class="btn btn-primary" id="save">' + (editing ? 'Save changes' : 'Add site') + '</button>' +
-        '<button class="btn btn-ghost" data-nav="' + (editing ? '#/site/' + id : '#/sites') + '">Cancel</button>' +
+        '<button class="btn btn-primary" id="save">' + (editing ? 'Save changes' : 'Add project') + '</button>' +
+        '<button class="btn btn-ghost" data-back="' + (editing ? '#/site/' + id : '#/sites') + '">Cancel</button>' +
       '</div></div></main>' + tabbar('sites');
     root.innerHTML = html;
 
     document.getElementById('save').addEventListener('click', function () {
       var name = document.getElementById('s-name').value.trim();
-      if (!name) { toast('Give the site a name'); return; }
+      if (!name) { toast('Give the project a name'); return; }
       var payload = {
         name: name,
         community: document.getElementById('s-comm').value.trim() || null,
@@ -926,8 +1035,10 @@
             is_archived: false
           }));
       p.then(function (rec) {
-        toast(editing ? 'Saved' : 'Site added');
-        location.hash = '#/site/' + (editing ? id : rec.id);
+        toast(editing ? 'Saved' : 'Project added');
+        var back = (!editing && state.returnTo === 'task') ? '#/activity/new?site=' + rec.id : '#/site/' + (editing ? id : rec.id);
+        state.returnTo = null;
+        go(back, true);
       });
     });
   }
@@ -939,7 +1050,7 @@
     Promise.all([Store.getAll('sites'), Store.getAll('activities')]).then(function (res) {
       var siteCount = res[0].length, actCount = res[1].length;
 
-      var html = appbar('Settings', Sync.syncState().enabled ? 'Shared sync' : 'On this device', null, '');
+      var html = appbar('Settings', Sync.syncState().enabled ? 'Shared sync' : 'On this device', '#/', '');
       html += '<main>';
 
       // --- who ---
@@ -971,8 +1082,8 @@
       html += '<div class="panel"><h2>Your data</h2>' +
         '<dl class="kv">' +
         '<dt>Stored</dt><dd>' + esc(where) + '</dd>' +
-        '<dt>Sites</dt><dd class="mono">' + siteCount + '</dd>' +
-        '<dt>Work items</dt><dd class="mono">' + actCount + '</dd>' +
+        '<dt>Projects</dt><dd class="mono">' + siteCount + '</dd>' +
+        '<dt>Tasks</dt><dd class="mono">' + actCount + '</dd>' +
         '</dl>' +
         '<p style="font-size:.85rem;color:' + (st.status === 'error' ? 'var(--alert)' : 'var(--ink-3)') + ';margin:4px 0 0">' + esc(note) + '</p></div>';
 
@@ -992,7 +1103,7 @@
       // --- starter data ---
       if (siteCount === 0 && actCount === 0) {
         html += '<div class="panel"><h2>Starter data</h2>' +
-          '<p style="font-size:.85rem;color:var(--ink-3);margin-top:0">Load the sites and jobs from your ' +
+          '<p style="font-size:.85rem;color:var(--ink-3);margin-top:0">Load the projects and tasks from your ' +
           '\u201cProject Schedule \u2013 Shamel\u201d spreadsheet to begin with something to edit.</p>' +
           '<div class="btnrow"><button class="btn btn-ghost" id="load-seed">Load spreadsheet data</button></div></div>';
       }
@@ -1060,7 +1171,7 @@
       if (seedBtn) seedBtn.addEventListener('click', function () {
         seedBtn.disabled = true;
         loadSeedData().then(function (n) {
-          toast(n ? 'Loaded ' + n + ' work items' : 'Nothing to load');
+          toast(n ? 'Loaded ' + n + ' tasks' : 'Nothing to load');
           refreshAndRender();
         }).catch(function () { toast('Could not load starter data'); seedBtn.disabled = false; });
       });
@@ -1102,7 +1213,7 @@
   }
 
   function exportCsv() {
-    var rows = [['Site', 'Community', 'Contractor', 'Type', 'Scope', 'Qty', 'Install date', 'Target finish', 'Actual finish', 'Status']];
+    var rows = [['Project', 'Community', 'Contractor', 'Type', 'Scope', 'Qty', 'Install date', 'Target finish', 'Actual finish', 'Status']];
     filtered().forEach(function (a) {
       var s = siteById(a.site_id) || {};
       rows.push([
@@ -1171,6 +1282,9 @@
      Handling both here guarantees a tap anywhere on a card opens it, even
      if the browser doesn't fire the native hashchange for some reason. */
   document.addEventListener('click', function (e) {
+    var backEl = e.target.closest('[data-back]');
+    if (backEl) { goBack(backEl.getAttribute('data-back')); return; }
+
     var navEl = e.target.closest('[data-nav]');
     if (navEl) { location.hash = navEl.getAttribute('data-nav'); return; }
 
@@ -1183,7 +1297,33 @@
     }
   });
 
-  window.addEventListener('hashchange', refreshAndRender);
+  /* In-app history, so Back never leaves the app. A list of the screens
+     visited; works with the phone's own back button too. */
+  var navStack = ['#/'];
+  var replacing = false;
+  function curHash() { return location.hash || '#/'; }
+  window.addEventListener('hashchange', function () {
+    var h = curHash();
+    if (replacing) { replacing = false; navStack[navStack.length - 1] = h; }
+    else if (navStack.length > 1 && navStack[navStack.length - 2] === h) navStack.pop();
+    else navStack.push(h);
+    refreshAndRender();
+  });
+  function goBack(fallback) {
+    if (navStack.length > 1) history.back();
+    else go(fallback || '#/', true);
+  }
+  /* Navigate; with replace=true the current screen is swapped out of the
+     history, so Back after saving a form skips the form. */
+  function go(hash, replace) {
+    if (location.hash === hash) { refreshAndRender(); return; }
+    if (replace) {
+      replacing = true;
+      location.replace(location.href.split('#')[0] + hash);
+    } else {
+      location.hash = hash;
+    }
+  }
 
   /* Someone else changed something (or the sync status moved). Redraw —
      unless the person is part-way through typing, in which case the fresh
@@ -1212,6 +1352,10 @@
      Boot
      ===================================================================== */
   function boot() {
+    // The app always opens on the main dashboard.
+    if (location.hash !== '#/') {
+      history.replaceState(null, '', location.href.split('#')[0] + '#/');
+    }
     Sync.ensureSession().then(function (sess) {
       state.user = sess.user;
       Sync.initCloud();

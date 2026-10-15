@@ -502,3 +502,40 @@ main { padding: var(--pad); max-width: 1100px; margin: 0 auto; }
     transition-duration: .01ms !important;
   }
 }
+
+/* =====================================================================
+   Back button, dashboard quick actions, team picker
+   ===================================================================== */
+.backbtn { gap: 2px; padding: 0 10px 0 4px; font-family: var(--body); font-size: .85rem; font-weight: 600; }
+@media (max-width: 380px) { .backlbl { display: none; } .backbtn { padding: 0 8px; } }
+
+.quick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.quick .btn { width: 100%; }
+@media (min-width: 860px) { .quick { display: flex; } .quick .btn { width: auto; } }
+
+.assignees { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: .8rem; color: var(--ink-2); }
+.assignees svg { flex: 0 0 auto; color: var(--ink-3); }
+
+.people { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.person {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
+  padding: 6px 12px 6px 10px; border: 1px solid #CCCCCC; border-radius: var(--r);
+  background: var(--panel); cursor: pointer;
+}
+.person input { width: 18px; height: 18px; margin: 0; accent-color: #000; }
+.person strong { font-weight: 600; font-size: .9rem; }
+.person .eyebrow { display: block; font-size: .62rem; }
+.person.on { border-color: #000; background: var(--panel-sunk); }
+.addperson { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.addperson input {
+  width: 100%; min-height: var(--tap); padding: 0 12px;
+  border: 1px solid var(--alu-line); border-radius: var(--r); background: var(--panel); color: var(--ink);
+}
+@media (min-width: 600px) { .addperson { grid-template-columns: 2fr 2fr auto; } }
+.field label.person {
+  display: inline-flex; margin: 0; text-transform: none; letter-spacing: 0;
+  font-family: var(--body); font-size: 1rem; color: var(--ink);
+}
+.field .person .eyebrow { margin-top: 1px; }
+.field .person input { width: 18px; height: 18px; min-height: 0; padding: 0; border: none; box-shadow: none; flex: 0 0 auto; }
+.row2 > .field { min-width: 0; }
