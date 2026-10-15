@@ -6,7 +6,7 @@
    keeps its own offline copy and queue.
    ===================================================================== */
 
-var VERSION = 'glazing-v5-projects';
+var VERSION = 'glazing-v6-reports';
 var SHELL = VERSION + '-shell';
 var VENDOR = VERSION + '-vendor';
 
@@ -30,6 +30,8 @@ var SHELL_FILES = [
 function isVendor(url) {
   // Only the Firebase library files — never live Firestore/Auth requests.
   if (url.hostname === 'www.gstatic.com' && url.pathname.indexOf('/firebasejs/') === 0) return true;
+  // PDF library for reports.
+  if (url.hostname === 'cdnjs.cloudflare.com' && url.pathname.indexOf('/ajax/libs/jspdf') === 0) return true;
   return url.hostname === 'cdn.jsdelivr.net' ||
          url.hostname === 'fonts.googleapis.com' ||
          url.hostname === 'fonts.gstatic.com';

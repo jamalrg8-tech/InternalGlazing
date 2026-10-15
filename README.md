@@ -107,7 +107,13 @@ to the top of the dashboard so you can fix them as you go.
 - **Update log** — timestamped notes against each job; nothing overwrites anything.
 - **Team** — assign one or more people to a task; type in a new name (and role)
   if someone isn't on the list yet. Names are shared with the whole team.
-- **Back and Home buttons** on every screen; the app always opens on the dashboard.
+- **Back and Home buttons** on every screen; the menu sits at the top; the app
+  always opens on the dashboard.
+- **Reports** — every project, or only those with tasks in a chosen status
+  (also by contractor, type of work, active/completed). Totals, a status
+  breakdown and a project table, with or without the task list. **View PDF**,
+  **Download PDF** or **Export CSV**. The PDF library loads the first time it's
+  used (needs a connection once) and then works offline.
 - **Photos & documents** — attach site photos, LPOs, drawings and snags, kept on
   the device.
 - **Dashboard, board and filters** — by site, status, category, contractor.

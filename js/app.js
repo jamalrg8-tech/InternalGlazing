@@ -265,6 +265,7 @@
       { href: '#/', key: 'dash', label: 'Dashboard', icon: 'M3 5h18M3 12h18M3 19h12' },
       { href: '#/board', key: 'board', label: 'Board', icon: 'M4 4h5v16H4zM10 4h5v10h-5zM16 4h4v7h-4z' },
       { href: '#/sites', key: 'sites', label: 'Projects', icon: 'M4 20V9l8-5 8 5v11H4z' },
+      { href: '#/reports', key: 'reports', label: 'Reports', icon: 'M5 20V10M12 20V4M19 20v-7' },
       { href: '#/settings', key: 'set', label: 'Settings', icon: 'M4 12a8 8 0 0113.7-5.7M20 12a8 8 0 01-13.7 5.7M18 4v4h-4M6 20v-4h4' }
     ];
     return '<nav class="tabbar">' + tabs.map(function (t) {
@@ -273,6 +274,20 @@
         t.label + '</a>';
     }).join('') + '</nav>';
   }
+
+  /* The menu sits at the top, directly under the header. Views still emit
+     it last; this moves it into one sticky top block with the header. */
+  function placeTopbar() {
+    var nav = root.querySelector(':scope > .tabbar, main ~ .tabbar');
+    if (!nav || nav.parentNode.classList.contains('topbar')) return;
+    var head = root.querySelector(':scope > .masthead, :scope > .appbar');
+    var wrap = document.createElement('div');
+    wrap.className = 'topbar';
+    if (head) { root.insertBefore(wrap, head); wrap.appendChild(head); }
+    else root.insertBefore(wrap, root.firstChild);
+    wrap.appendChild(nav);
+  }
+  if (global.MutationObserver) new MutationObserver(placeTopbar).observe(root, { childList: true });
 
   function statusChip(status) {
     var m = statusMeta(status);
@@ -1191,6 +1206,365 @@
     });
   }
 
+  /* =====================================================================
+     VIEW — Reports
+     All projects, or just those with tasks in a chosen status. Printable
+     (Save as PDF from the print dialog) and exportable to a spreadsheet.
+     ===================================================================== */
+  var rep = { status: '', projState: '', contractor: '', category: '', detail: true };
+
+  function isOpenTask(a) { return a.status !== 'Completed'; }
+  function isOverdue(a) {
+    if (!isOpenTask(a)) return false;
+    var d = daysUntil(a.target_finish_date);
+    return d !== null && d < 0;
+  }
+
+  /* Rows of { site, tasks (matching filter), all (every task on the project) } */
+  function reportRows() {
+    var bySite = {};
+    state.data.activities.forEach(function (a) {
+      (bySite[a.site_id] = bySite[a.site_id] || []).push(a);
+    });
+    return state.data.sites.filter(function (s) { return !s.is_archived; }).map(function (s) {
+      var all = bySite[s.id] || [];
+      var tasks = all.filter(function (a) {
+        if (rep.status && a.status !== rep.status) return false;
+        if (rep.category && a.category !== rep.category) return false;
+        return true;
+      });
+      return { site: s, all: all, tasks: tasks };
+    }).filter(function (r) {
+      if (rep.contractor && r.site.main_contractor !== rep.contractor) return false;
+      var open = r.all.filter(isOpenTask).length;
+      if (rep.projState === 'active' && !open) return false;
+      if (rep.projState === 'done' && (open || !r.all.length)) return false;
+      if (rep.projState === 'empty' && r.all.length) return false;
+      // A status or type filter shows only projects that have matching tasks.
+      if ((rep.status || rep.category) && !r.tasks.length) return false;
+      return true;
+    }).sort(function (a, b) { return a.site.name.localeCompare(b.site.name); });
+  }
+
+  function viewReports() {
+    var rows = reportRows();
+    var tasks = [];
+    rows.forEach(function (r) { tasks = tasks.concat(r.tasks); });
+    var done = tasks.filter(function (a) { return a.status === 'Completed'; }).length;
+    var overdue = tasks.filter(isOverdue).length;
+    var review = tasks.filter(function (a) { return a.status === 'Needs Review'; }).length;
+
+    function opts(list, sel) {
+      return list.map(function (v) {
+        var val = typeof v === 'string' ? v : v.value, lab = typeof v === 'string' ? v : v.label;
+        return '<option value="' + esc(val) + '"' + (sel === val ? ' selected' : '') + '>' + esc(lab) + '</option>';
+      }).join('');
+    }
+
+    var filterDesc = [
+      rep.status ? 'Status: ' + rep.status : 'All statuses',
+      rep.projState ? { active: 'Active projects', done: 'Completed projects', empty: 'Projects with no tasks' }[rep.projState] : 'All projects',
+      rep.contractor ? 'Contractor: ' + rep.contractor : '',
+      rep.category ? 'Type: ' + rep.category : ''
+    ].filter(Boolean).join(' · ');
+
+    var html = appbar('Reports', 'Projects & tasks', '#/', '');
+    html += '<main class="report">';
+    html += '<div class="print-head"><div class="brand-word">EUROLUX</div>' +
+      '<h1>Internal Glazing — Project Report</h1>' +
+      '<p>' + esc(todayLong()) + ' · ' + esc(filterDesc) + '</p></div>';
+
+    html += '<div class="filters report-filters">' +
+      '<select id="r-status" aria-label="Task status"><option value="">All statuses</option>' + opts(STATUSES.map(function (x) { return x.name; }), rep.status) + '</select>' +
+      '<select id="r-proj" aria-label="Project state">' + opts([
+        { value: '', label: 'All projects' }, { value: 'active', label: 'Active projects' },
+        { value: 'done', label: 'Completed projects' }, { value: 'empty', label: 'Projects with no tasks' }], rep.projState) + '</select>' +
+      '<select id="r-con" aria-label="Contractor"><option value="">All contractors</option>' + opts(contractors(), rep.contractor) + '</select>' +
+      '<select id="r-cat" aria-label="Type of work"><option value="">All types</option>' + opts(allCategories(), rep.category) + '</select>' +
+      '</div>';
+
+    html += '<div class="report-actions">' +
+      '<div class="seg" role="group" aria-label="Report layout">' +
+        '<button class="' + (rep.detail ? '' : 'on') + '" id="r-sum">Summary</button>' +
+        '<button class="' + (rep.detail ? 'on' : '') + '" id="r-det">With tasks</button></div>' +
+      '<button class="btn btn-ghost" id="r-csv">Export CSV</button>' +
+      '<button class="btn btn-ghost" id="r-view">View PDF</button>' +
+      '<button class="btn btn-primary" id="r-pdf">Download PDF</button>' +
+      '</div>';
+
+    // KPI tiles
+    html += '<div class="kpis">' +
+      kpi(rows.length, 'Projects') + kpi(tasks.length, 'Tasks') +
+      kpi(done, 'Completed', 'good') + kpi(tasks.length - done, 'Open') +
+      kpi(overdue, 'Overdue', overdue ? 'bad' : '') + kpi(review, 'Needs review', review ? 'warn' : '') +
+      '</div>';
+
+    // status breakdown — tap a row to filter by it
+    var counts = {};
+    tasks.forEach(function (a) { counts[a.status] = (counts[a.status] || 0) + 1; });
+    var max = 0;
+    STATUSES.forEach(function (x) { max = Math.max(max, counts[x.name] || 0); });
+    html += '<div class="panel"><h2>Tasks by status</h2><div class="bars">' +
+      STATUSES.map(function (x) {
+        var n = counts[x.name] || 0;
+        return '<button class="barrow' + (rep.status === x.name ? ' on' : '') + '" data-status="' + esc(x.name) + '">' +
+          '<span class="barlbl">' + esc(x.name) + '</span>' +
+          '<span class="bartrack"><span class="barfill" style="width:' + (max ? Math.round(n / max * 100) : 0) + '%;background:' + x.color + '"></span></span>' +
+          '<span class="barnum mono">' + n + '</span></button>';
+      }).join('') + '</div>' +
+      (rep.status ? '<button class="linkbtn" id="r-clear">Show all statuses</button>' : '') +
+      '</div>';
+
+    // projects table
+    html += '<div class="sechead"><h2>Projects</h2><span class="count mono">' + rows.length + '</span></div>';
+    if (!rows.length) {
+      html += emptyState('No projects match', 'Change or clear a filter to see more.');
+    } else {
+      html += '<div class="rtable-wrap"><table class="rtable"><thead><tr>' +
+        '<th>Project</th><th>Contractor</th><th class="num">Tasks</th><th class="num">Done</th>' +
+        '<th class="num">Open</th><th class="num">Overdue</th><th>Progress</th></tr></thead><tbody>' +
+        rows.map(function (r) {
+          var n = r.tasks.length;
+          var d = r.tasks.filter(function (a) { return a.status === 'Completed'; }).length;
+          var od = r.tasks.filter(isOverdue).length;
+          var pct = n ? Math.round(d / n * 100) : 0;
+          var main = '<tr class="prow"><td><a href="#/site/' + esc(r.site.id) + '"><strong>' + esc(r.site.name) + '</strong></a>' +
+              (r.site.community ? '<span class="sub">' + esc(r.site.community) + '</span>' : '') + '</td>' +
+            '<td>' + esc(r.site.main_contractor || '—') + '</td>' +
+            '<td class="num">' + n + '</td><td class="num">' + d + '</td><td class="num">' + (n - d) + '</td>' +
+            '<td class="num' + (od ? ' bad' : '') + '">' + od + '</td>' +
+            '<td><span class="prog"><span style="width:' + pct + '%"></span></span><span class="mono pct">' + pct + '%</span></td></tr>';
+          if (!rep.detail || !n) return main;
+          return main + '<tr class="trows"><td colspan="7"><table class="ttable"><tbody>' +
+            r.tasks.slice().sort(function (x, y) {
+              return (statusMeta(x.status).stage + 10) % 20 - (statusMeta(y.status).stage + 10) % 20;
+            }).map(function (a) {
+              var who = assigneeNames(a.id).join(', ');
+              return '<tr><td><a href="#/activity/' + esc(a.id) + '">' + esc(a.scope_description || '(no scope)') + '</a>' +
+                '<span class="sub">' + esc(a.category || '') + (who ? ' · ' + esc(who) : '') + '</span></td>' +
+                '<td>' + statusChip(a.status) + '</td>' +
+                '<td class="mono">' + fmtDate(a.target_finish_date) + (isOverdue(a) ? ' <span class="bad">overdue</span>' : '') + '</td></tr>';
+            }).join('') + '</tbody></table></td></tr>';
+        }).join('') +
+        '</tbody></table></div>';
+    }
+
+    html += footer() + '</main>' + tabbar('reports');
+    root.innerHTML = html;
+
+    function bindSel(elId, key) {
+      document.getElementById(elId).addEventListener('change', function (e) { rep[key] = e.target.value; viewReports(); });
+    }
+    bindSel('r-status', 'status'); bindSel('r-proj', 'projState'); bindSel('r-con', 'contractor'); bindSel('r-cat', 'category');
+    root.querySelectorAll('.barrow').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var st = b.getAttribute('data-status');
+        rep.status = rep.status === st ? '' : st;
+        viewReports();
+      });
+    });
+    var clr = document.getElementById('r-clear');
+    if (clr) clr.addEventListener('click', function () { rep.status = ''; viewReports(); });
+    document.getElementById('r-sum').addEventListener('click', function () { rep.detail = false; viewReports(); });
+    document.getElementById('r-det').addEventListener('click', function () { rep.detail = true; viewReports(); });
+    document.getElementById('r-view').addEventListener('click', function () { reportPdf(rows, filterDesc, 'view'); });
+    document.getElementById('r-pdf').addEventListener('click', function () { reportPdf(rows, filterDesc, 'save'); });
+    document.getElementById('r-csv').addEventListener('click', function () { exportReportCsv(rows); });
+  }
+
+  /* ---------------------------------------------------------------
+     PDF — built on the phone with jsPDF (loaded only when first used,
+     then kept for offline use by the service worker).
+     --------------------------------------------------------------- */
+  var PDF_LIBS = [
+    'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'
+  ];
+  var pdfReady = null;
+  function loadPdfLib() {
+    if (window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API.autoTable) return Promise.resolve();
+    if (pdfReady) return pdfReady;
+    pdfReady = PDF_LIBS.reduce(function (p, src) {
+      return p.then(function () {
+        return new Promise(function (resolve, reject) {
+          var sc = document.createElement('script');
+          sc.src = src; sc.onload = resolve;
+          sc.onerror = function () { reject(new Error('load ' + src)); };
+          document.head.appendChild(sc);
+        });
+      });
+    }, Promise.resolve()).catch(function (e) { pdfReady = null; throw e; });
+    return pdfReady;
+  }
+
+  function reportPdf(rows, filterDesc, mode) {
+    // Open the viewer window straight away (inside the tap) so pop-up
+    // blockers allow it; it's filled once the PDF is ready.
+    var win = mode === 'view' ? window.open('', '_blank') : null;
+    if (win) win.document.write('<p style="font-family:sans-serif;padding:24px">Preparing report…</p>');
+    toast('Preparing PDF…');
+    loadPdfLib().then(function () {
+      var doc = buildReportPdf(rows, filterDesc);
+      var name = 'Eurolux-Glazing-Report-' + today() + (rep.status ? '-' + rep.status.replace(/\W+/g, '-') : '') + '.pdf';
+      if (mode === 'view') {
+        var url = URL.createObjectURL(doc.output('blob'));
+        if (win) win.location.href = url; else window.open(url, '_blank') || (location.href = url);
+      } else {
+        doc.save(name);
+        toast('PDF downloaded');
+      }
+    }).catch(function (e) {
+      console.error(e);
+      if (win) win.close();
+      toast('PDF needs a connection the first time — opening print instead');
+      setTimeout(function () { window.print(); }, 600);
+    });
+  }
+
+  function buildReportPdf(rows, filterDesc) {
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    var W = doc.internal.pageSize.getWidth(), M = 14;
+    var tasks = [];
+    rows.forEach(function (r) { tasks = tasks.concat(r.tasks); });
+    var done = tasks.filter(function (a) { return a.status === 'Completed'; }).length;
+    var overdue = tasks.filter(isOverdue).length;
+    var review = tasks.filter(function (a) { return a.status === 'Needs Review'; }).length;
+
+    // header band
+    doc.setFillColor(0, 0, 0); doc.rect(0, 0, W, 24, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('times', 'bold'); doc.setFontSize(16); doc.text('EUROLUX', M, 11);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+    doc.text('Internal Glazing — Project Report', M, 18);
+    doc.text(todayLong(), W - M, 11, { align: 'right' });
+    doc.text(filterDesc, W - M, 18, { align: 'right' });
+    doc.setTextColor(26, 26, 26);
+
+    // KPI boxes
+    var k = [[rows.length, 'Projects'], [tasks.length, 'Tasks'], [done, 'Completed'],
+             [tasks.length - done, 'Open'], [overdue, 'Overdue'], [review, 'Needs review']];
+    var bw = (W - 2 * M - 5 * 4) / 6, y = 32;
+    k.forEach(function (it, i) {
+      var x = M + i * (bw + 4);
+      doc.setDrawColor(220); doc.setFillColor(247, 247, 247); doc.roundedRect(x, y, bw, 17, 1, 1, 'FD');
+      doc.setFont('times', 'bold'); doc.setFontSize(16);
+      if (it[1] === 'Completed') doc.setTextColor(21, 128, 61);
+      else if (it[1] === 'Overdue' && it[0]) doc.setTextColor(185, 28, 28);
+      else if (it[1] === 'Needs review' && it[0]) doc.setTextColor(180, 83, 9);
+      else doc.setTextColor(26, 26, 26);
+      doc.text(String(it[0]), x + 4, y + 8.5);
+      doc.setTextColor(102); doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+      doc.text(it[1], x + 4, y + 14);
+    });
+    doc.setTextColor(26, 26, 26);
+
+    // status breakdown
+    var counts = {};
+    tasks.forEach(function (a) { counts[a.status] = (counts[a.status] || 0) + 1; });
+    doc.autoTable({
+      startY: y + 24, margin: { left: M, right: M }, tableWidth: 110,
+      head: [['Status', 'Tasks']],
+      body: STATUSES.map(function (x) { return [x.name, String(counts[x.name] || 0)]; }),
+      theme: 'grid', styles: { fontSize: 8, cellPadding: 1.6, lineColor: [225, 225, 225] },
+      headStyles: { fillColor: [0, 0, 0], textColor: 255, fontStyle: 'bold' },
+      columnStyles: { 1: { halign: 'right', cellWidth: 20 } },
+      didParseCell: function (h) { if (h.section === 'head' && h.column.index === 1) h.cell.styles.halign = 'right'; }
+    });
+
+    // projects summary
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 8, margin: { left: M, right: M },
+      head: [['Project', 'Community', 'Contractor', 'Tasks', 'Done', 'Open', 'Overdue', 'Progress']],
+      body: rows.map(function (r) {
+        var n = r.tasks.length, d = r.tasks.filter(function (a) { return a.status === 'Completed'; }).length;
+        return [r.site.name, r.site.community || '', r.site.main_contractor || '', n, d, n - d,
+                r.tasks.filter(isOverdue).length, (n ? Math.round(d / n * 100) : 0) + '%'];
+      }),
+      theme: 'striped', styles: { fontSize: 8.5, cellPadding: 2 },
+      headStyles: { fillColor: [0, 0, 0], textColor: 255 },
+      alternateRowStyles: { fillColor: [247, 247, 247] },
+      columnStyles: { 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' },
+                      6: { halign: 'right' }, 7: { halign: 'right' } },
+      didParseCell: function (h) {
+        if (h.section === 'head' && h.column.index >= 3) h.cell.styles.halign = 'right';
+        if (h.section === 'body' && h.column.index === 6 && Number(h.cell.raw) > 0) {
+          h.cell.styles.textColor = [185, 28, 28]; h.cell.styles.fontStyle = 'bold';
+        }
+      }
+    });
+
+    // task detail, grouped by project
+    if (rep.detail) {
+      var body = [];
+      rows.forEach(function (r) {
+        if (!r.tasks.length) return;
+        body.push([{ content: r.site.name + (r.site.main_contractor ? '  ·  ' + r.site.main_contractor : ''), colSpan: 6,
+          styles: { fillColor: [235, 235, 235], fontStyle: 'bold' } }]);
+        r.tasks.forEach(function (a) {
+          body.push([a.scope_description || '(no scope)', a.category || '', a.status || '',
+            assigneeNames(a.id).join(', '), fmtDate(a.target_finish_date), isOverdue(a) ? 'Overdue' : '']);
+        });
+      });
+      if (body.length) {
+        doc.addPage();
+        doc.setFont('times', 'bold'); doc.setFontSize(13); doc.text('Tasks by project', M, 16);
+        doc.autoTable({
+          startY: 21, margin: { left: M, right: M },
+          head: [['Task', 'Type', 'Status', 'Assigned to', 'Target', '']],
+          body: body, theme: 'grid',
+          styles: { fontSize: 8, cellPadding: 1.8, lineColor: [225, 225, 225], valign: 'top' },
+          headStyles: { fillColor: [0, 0, 0], textColor: 255 },
+          columnStyles: { 0: { cellWidth: 95 }, 1: { cellWidth: 38 }, 2: { cellWidth: 34 },
+                          3: { cellWidth: 52 }, 4: { cellWidth: 22 }, 5: { cellWidth: 18 } },
+          didParseCell: function (h) {
+            if (h.section === 'body' && h.column.index === 5 && h.cell.raw === 'Overdue') {
+              h.cell.styles.textColor = [185, 28, 28]; h.cell.styles.fontStyle = 'bold';
+            }
+          }
+        });
+      }
+    }
+
+    // footer on every page
+    var pages = doc.internal.getNumberOfPages();
+    for (var i = 1; i <= pages; i++) {
+      doc.setPage(i);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(120);
+      var H = doc.internal.pageSize.getHeight();
+      doc.text('Eurolux Internal Glazing Project Tracker', M, H - 7);
+      doc.text('Page ' + i + ' of ' + pages, W - M, H - 7, { align: 'right' });
+    }
+    return doc;
+  }
+
+  function kpi(n, label, tone) {
+    return '<div class="kpi' + (tone ? ' ' + tone : '') + '"><strong>' + n + '</strong><span>' + esc(label) + '</span></div>';
+  }
+
+  function exportReportCsv(rows) {
+    var out = [['Project', 'Community', 'Contractor', 'Task', 'Type', 'Status', 'Assigned to', 'Install date', 'Target finish', 'Actual finish', 'Overdue']];
+    rows.forEach(function (r) {
+      if (!r.tasks.length) {
+        out.push([r.site.name, r.site.community || '', r.site.main_contractor || '', '', '', '', '', '', '', '', '']);
+      }
+      r.tasks.forEach(function (a) {
+        out.push([r.site.name, r.site.community || '', r.site.main_contractor || '',
+          a.scope_description || '', a.category || '', a.status || '', assigneeNames(a.id).join(', '),
+          (realDate(a.installation_date) || '').slice(0, 10), (realDate(a.target_finish_date) || '').slice(0, 10),
+          (realDate(a.actual_finish_date) || '').slice(0, 10), isOverdue(a) ? 'Yes' : '']);
+      });
+    });
+    var csv = out.map(function (r) {
+      return r.map(function (cell) {
+        var v = String(cell === null || cell === undefined ? '' : cell);
+        return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+      }).join(',');
+    }).join('\n');
+    downloadBlob('﻿' + csv, 'glazing-report-' + today() + (rep.status ? '-' + rep.status.replace(/\W+/g, '-').toLowerCase() : '') + '.csv', 'text/csv;charset=utf-8');
+    toast('Report exported');
+  }
+
   function downloadBlob(content, filename, type) {
     var blob = new Blob([content], { type: type });
     var url = URL.createObjectURL(blob);
@@ -1258,6 +1632,7 @@
     if (!parts.length) return viewDashboard();
     if (parts[0] === 'board') return viewBoard();
     if (parts[0] === 'settings') return viewSettings();
+    if (parts[0] === 'reports') return viewReports();
 
     if (parts[0] === 'sites') return viewSites();
     if (parts[0] === 'site') {
