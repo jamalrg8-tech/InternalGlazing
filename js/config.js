@@ -15,8 +15,13 @@ window.CATEGORIES = [
   'Shower Partition',
   'Balustrade',
   'Staircase Glass Balustrade',
+  'Snagging',
   'Other'
 ];
+
+/* "Type of work" also accepts anything typed in. Choosing this option in
+   the form reveals a text box; whatever is typed is saved as the type. */
+window.CUSTOM_CATEGORY_LABEL = 'Other (type your own)…';
 
 /* The pipeline in the order work actually moves through it. `stage` drives
    the progress rail; the three off-pipeline states sit outside it. */

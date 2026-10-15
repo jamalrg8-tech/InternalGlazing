@@ -12,34 +12,62 @@ Progressive Web App with no build step.
 
 ## How the data works — read this first
 
-Everything you enter is saved **in the browser on the device you entered it on**,
-using the browser's built-in storage (IndexedDB). That has consequences worth
-understanding:
+Every phone keeps its own copy of the data (in the browser's IndexedDB), so the
+app opens instantly and works with no signal.
 
-- **It's private and works with no signal.** Nothing is uploaded anywhere.
-- **It does not sync between devices.** Your phone and an installer's phone each
-  keep their own separate copy. A change on one does not appear on the other.
-- **It can be erased.** Clearing the browser's site data, or deleting the
-  installed app, erases the work with it. So take backups (below).
+**With shared sync switched on** (Firebase, below), every change also goes to a
+shared online database and appears on everyone else's phone within seconds.
+Changes made with no signal are kept on the phone and sent automatically when
+the connection returns.
 
-If you later need one shared list that everyone sees live, that needs a server —
-the earlier Supabase version of this app did exactly that and is still in the
-project's git history.
+The first time each phone opens the synced version, whatever it already holds
+is **uploaded and merged** into the shared list. Where two phones have the same
+job, the more recently edited copy wins, so a phone with old starter data can't
+overwrite someone's real edits. Nothing has to be exported or imported by hand —
+the person with all the data just opens the updated app **on the same phone and
+browser they've been using**.
 
-### Backups and moving between devices
+**Without it** (`js/firebase-config.js` left as `null`), the app behaves like
+the original local-only build: nothing leaves the device.
+
+### Switching on shared sync (one-off, ~10 minutes)
+
+1. Go to <https://console.firebase.google.com> → **Add project** (any name, e.g.
+   *eurolux-glazing*). Google Analytics is not needed.
+2. **Build → Firestore Database → Create database.** Pick a location near you
+   (e.g. `europe-west` or `me-central`), start in **production mode**.
+3. In Firestore, open the **Rules** tab, paste the contents of
+   `firestore.rules` from this folder, and **Publish**.
+4. **Build → Authentication → Get started → Sign-in method → Anonymous →
+   Enable → Save.**
+5. **Project settings** (gear icon) → **Your apps** → the web icon `</>` →
+   register an app (no hosting needed). Copy the `firebaseConfig` values.
+6. Paste them into `js/firebase-config.js` in place of `null`, and redeploy.
+
+Open the app → **Settings → Your data** should say *Shared with the whole team*,
+and a **Synced** badge shows in the header.
+
+The free (Spark) plan is plenty for a team this size: 1 GB of storage and
+50,000 reads / 20,000 writes per day.
+
+**Who can see it:** any phone that opens the app's link joins the shared list —
+there are no individual logins. Keep the link within the team. Per-person
+sign-in can be added later if needed.
+
+### Photos and documents
+
+With sync on, photos are shrunk and shared so everyone can open them. Files
+larger than about 700 KB that can't be shrunk (big PDFs, for example) stay on
+the phone that added it. Without sync, every file stays on its own phone.
+
+### Backups
 
 Under **Settings → Backup & transfer**:
 
-- **Export backup** writes a `.json` file you can keep somewhere safe (email it to
-  yourself, drop it in cloud storage).
-- **Import backup** reads one back — either *replacing* everything on the device or
-  *merging* into it. This is how you move your work to a new phone: export on the
-  old one, import on the new one.
-- **Export work list (CSV)** gives you a spreadsheet of the current filtered list
-  for reporting.
-
-> Photos and documents are **not** included in a backup file — they'd make it
-> huge. They stay on the device that took them.
+- **Export backup** writes a `.json` safety copy (photos not included).
+- **Import backup** reads one back. With sync on it always *merges* (newer copy
+  wins), so an import can never wipe the team's list.
+- **Export work list (CSV)** gives a spreadsheet of the current filtered list.
 
 ---
 
@@ -70,8 +98,9 @@ to the top of the dashboard so you can fix them as you go.
 
 ## What it does
 
-- **Sites and work items** — every job belongs to a site, tagged with one of the
-  five glazing categories, with install and target finish dates.
+- **Sites and work items** — every job belongs to a site, tagged with a type of
+  work (partitions, doors, showers, balustrades, staircase glass, **Snagging**,
+  or anything typed in), with install and target finish dates.
 - **Stage tracking** — LPO Pending → Measurement → Material Ordered → Delivered →
   In Progress → Completed, plus On Hold, Rejected / Resubmit and Needs Review.
 - **Update log** — timestamped notes against each job; nothing overwrites anything.
@@ -79,6 +108,7 @@ to the top of the dashboard so you can fix them as you go.
 - **Photos & documents** — attach site photos, LPOs, drawings and snags, kept on
   the device.
 - **Dashboard, board and filters** — by site, status, category, contractor.
+- **Shared live list** across every phone (Firebase), still usable offline.
 - **Backup / restore / CSV export.**
 
 ---
@@ -105,11 +135,13 @@ Any static host works. For Vercel:
 ├── manifest.webmanifest    Install metadata
 ├── sw.js                   Service worker (offline)
 ├── vercel.json             Static-host headers
+├── firestore.rules         Database access rules (paste into Firebase)
 ├── css/styles.css          Design system
 ├── js/
+│   ├── firebase-config.js  Shared sync settings (null = local only)
 │   ├── config.js           Categories and statuses
 │   ├── store.js            IndexedDB wrapper
-│   ├── data.js             Local data layer + backup/restore
+│   ├── data.js             Data layer: device copy + Firebase sync + backup
 │   └── app.js              Router and views
 ├── data/seed.json          Optional starter data from the spreadsheet
 ├── icons/                  App icons
@@ -137,10 +169,10 @@ window.
 **My data vanished** — the browser's site data was cleared, or the app was
 reinstalled. Restore from your most recent backup. Take backups regularly.
 
-**A colleague can't see my jobs** — expected: there's no sync. Export a backup and
-send it to them to import, or host one shared install that everyone opens on the
-same device.
+**A colleague can't see my jobs** — check **Settings → Your data** on both
+phones. If it says *On this device only*, `js/firebase-config.js` hasn't been
+filled in. If it shows a sync problem, the message says which Firebase step
+(rules or anonymous sign-in) is missing.
 
-**A code change isn't showing** — the service worker serves a cached copy. Close
-all tabs and reopen; `sw.js` and `index.html` are set to revalidate, so it
-resolves on the next load.
+**A code change isn't showing** — the app's files are fetched fresh whenever
+there's a connection, so close the app fully and reopen it once.

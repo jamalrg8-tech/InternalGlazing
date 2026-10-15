@@ -2,11 +2,11 @@
    sw.js — service worker
 
    The app shell is cached so the tracker opens instantly and works with
-   no signal. Supabase API traffic is never cached: stale job data would
-   be worse than none, and IndexedDB already holds the offline copy.
+   no signal. Firestore traffic is never cached here: the Firebase SDK
+   keeps its own offline copy and queue.
    ===================================================================== */
 
-var VERSION = 'glazing-v3-eurolux';
+var VERSION = 'glazing-v4-sync';
 var SHELL = VERSION + '-shell';
 var VENDOR = VERSION + '-vendor';
 
@@ -15,6 +15,7 @@ var SHELL_FILES = [
   './index.html',
   './manifest.webmanifest',
   './css/styles.css',
+  './js/firebase-config.js',
   './js/config.js',
   './js/store.js',
   './js/data.js',
@@ -27,6 +28,8 @@ var SHELL_FILES = [
 
 /* Third-party assets we want available offline too. */
 function isVendor(url) {
+  // Only the Firebase library files — never live Firestore/Auth requests.
+  if (url.hostname === 'www.gstatic.com' && url.pathname.indexOf('/firebasejs/') === 0) return true;
   return url.hostname === 'cdn.jsdelivr.net' ||
          url.hostname === 'fonts.googleapis.com' ||
          url.hostname === 'fonts.gstatic.com';
@@ -57,7 +60,7 @@ self.addEventListener('fetch', function (e) {
   var url;
   try { url = new URL(req.url); } catch (err) { return; }
 
-  // Fonts and the Supabase library: serve from cache, fill it in the background.
+  // Fonts and the Firebase library: serve from cache, fill it in the background.
   if (isVendor(url)) {
     e.respondWith(
       caches.open(VENDOR).then(function (cache) {
@@ -84,18 +87,18 @@ self.addEventListener('fetch', function (e) {
     return;
   }
 
-  // Everything else same-origin: cache first, then network.
+  // Everything else same-origin: network first so a deploy (or a config
+  // change) reaches phones on the next open; the cache covers no signal.
   if (url.origin === self.location.origin) {
     e.respondWith(
-      caches.match(req, { ignoreSearch: true }).then(function (hit) {
-        if (hit) return hit;
-        return fetch(req).then(function (res) {
-          if (res && res.ok) {
-            var copy = res.clone();
-            caches.open(SHELL).then(function (c) { c.put(req, copy); });
-          }
-          return res;
-        });
+      fetch(req).then(function (res) {
+        if (res && res.ok) {
+          var copy = res.clone();
+          caches.open(SHELL).then(function (c) { c.put(req, copy); });
+        }
+        return res;
+      }).catch(function () {
+        return caches.match(req, { ignoreSearch: true });
       })
     );
   }

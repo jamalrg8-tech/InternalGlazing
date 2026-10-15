@@ -2,9 +2,8 @@
    store.js — local device database (IndexedDB)
 
    Everything the app renders comes from here first, so the UI works
-   identically with or without a connection. Writes made offline are
-   applied locally AND appended to the `outbox`, which sync.js drains
-   once the device is back online.
+   identically with or without a connection. When shared sync is on,
+   data.js keeps this copy in step with the cloud.
    ===================================================================== */
 
 (function (global) {
@@ -121,6 +120,15 @@
     });
   }
 
+  /* Swap a whole store's contents in ONE transaction, so a screen reading
+     at the same moment never sees it half-empty. Used by the live sync. */
+  function replaceTable(storeName, records) {
+    return tx(storeName, 'readwrite', function (s) {
+      s.clear();
+      records.forEach(function (r) { s.put(r); });
+    });
+  }
+
   /* ---------- meta ---------- */
   function setMeta(key, value) { return put('meta', { key: key, value: value }); }
   function getMeta(key) {
@@ -167,6 +175,7 @@
     del: del,
     clear: clear,
     replaceAll: replaceAll,
+    replaceTable: replaceTable,
     setMeta: setMeta,
     getMeta: getMeta,
     enqueue: enqueue,

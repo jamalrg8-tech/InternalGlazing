@@ -1,0 +1,19 @@
+rules_version = '2';
+
+// Eurolux Glazing Tracker — Cloud Firestore rules.
+// Paste into Firebase console → Firestore Database → Rules → Publish.
+//
+// Any device running the tracker signs in automatically (anonymous sign-in),
+// so this blocks scripts and bots that haven't loaded the app, but anyone who
+// opens the app's link can read and edit the list. If you need per-person
+// logins later, switch the app to email or Google sign-in and tighten this.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{collection}/{docId} {
+      allow read, write: if request.auth != null
+        && collection in ['sites', 'activities', 'activity_updates',
+                          'activity_team', 'profiles', 'attachments', 'files'];
+    }
+  }
+}

@@ -28,7 +28,11 @@
 
   function today() { return new Date().toISOString().slice(0, 10); }
 
+  /* Older starter data stored the word "null" instead of an empty date. */
+  function realDate(d) { return d && d !== 'null' ? d : null; }
+
   function fmtDate(d) {
+    d = realDate(d);
     if (!d) return '—';
     var parts = String(d).slice(0, 10).split('-');
     if (parts.length !== 3) return String(d);
@@ -48,6 +52,7 @@
   }
 
   function daysUntil(dateStr) {
+    dateStr = realDate(dateStr);
     if (!dateStr) return null;
     var target = new Date(String(dateStr).slice(0, 10) + 'T00:00:00');
     var now = new Date(today() + 'T00:00:00');
@@ -114,9 +119,19 @@
   /* ---------------------------------------------------------------
      Shared UI pieces
      --------------------------------------------------------------- */
+  var SYNC_LABELS = {
+    connecting: ['sync', 'Connecting'],
+    live:       ['',     'Synced'],
+    pending:    ['sync', 'Sending…'],
+    offline:    ['off',  'Offline — saved here'],
+    error:      ['off',  'Sync problem']
+  };
   function netPill() {
-    // Local-only build: nothing to sync, so no connection indicator.
-    return '';
+    var st = Sync.syncState();
+    if (!st.enabled) return '';
+    var l = SYNC_LABELS[st.status];
+    if (!l) return '';
+    return '<a class="netpill ' + l[0] + '" href="#/settings" title="Sync status"><span class="dot"></span>' + esc(l[1]) + '</a>';
   }
 
   function appbar(title, sub, backHref, actionsHtml) {
@@ -154,6 +169,7 @@
         euroluxMark() +
       '</div>' +
       '<h1 class="masthead-title">Eurolux Internal Glazing Project Tracker</h1>' +
+      (netPill() ? '<div class="masthead-sync">' + netPill() + '</div>' : '') +
       '</header>';
   }
 
@@ -244,6 +260,18 @@
     });
   }
 
+  /* The standard types plus any custom ones people have typed in. */
+  function allCategories() {
+    var seen = {}, extra = [];
+    CATEGORIES.forEach(function (c) { seen[c] = 1; });
+    state.data.activities.forEach(function (a) {
+      var c = (a.category || '').trim();
+      if (c && !seen[c]) { seen[c] = 1; extra.push(c); }
+    });
+    extra.sort(function (a, b) { return a.localeCompare(b); });
+    return CATEGORIES.slice(0, -1).concat(extra, CATEGORIES.slice(-1));
+  }
+
   function contractors() {
     var seen = {};
     state.data.sites.forEach(function (s) { if (s.main_contractor) seen[s.main_contractor] = 1; });
@@ -268,7 +296,7 @@
       '<div class="filters">' +
       '<select id="f-status"><option value="">All statuses</option>' + opts(STATUSES.map(function (s) { return s.name; }), f.status) + '</select>' +
       '<select id="f-site"><option value="">All sites</option>' + opts(siteOpts, f.site) + '</select>' +
-      '<select id="f-cat"><option value="">All types</option>' + opts(CATEGORIES, f.category) + '</select>' +
+      '<select id="f-cat"><option value="">All types</option>' + opts(allCategories(), f.category) + '</select>' +
       '<select id="f-con"><option value="">All contractors</option>' + opts(contractors(), f.contractor) + '</select>' +
       '<select id="f-mine"><option value="">Everyone</option><option value="1"' + (f.mine ? ' selected' : '') + '>Assigned to me</option></select>' +
       '</div>';
@@ -612,7 +640,7 @@
     document.getElementById('st').addEventListener('change', function (e) {
       var next = e.target.value;
       var patch = { status: next };
-      if (next === 'Completed' && !a.actual_finish_date) patch.actual_finish_date = today();
+      if (next === 'Completed' && !realDate(a.actual_finish_date)) patch.actual_finish_date = today();
       Sync.update('activities', id, patch).then(function () {
         toast('Status set to ' + next);
         refreshAndRender();
@@ -646,7 +674,7 @@
       compress(f).then(function (blob) {
         return Sync.addAttachment(id, blob, type, state.user ? state.user.id : null);
       }).then(function () {
-        toast('Photo saved');
+        toast('Saved');
         refreshAndRender();
       }).catch(function (e) {
         toast('Could not attach that file');
@@ -664,7 +692,8 @@
         if (!att) return;
         Sync.fileUrl(att).then(function (url) {
           if (url) window.open(url, '_blank');
-          else toast('That file is not on this device');
+          else toast(Sync.syncState().enabled ? 'That file was too large to share, so it is only on the phone that added it'
+                                              : 'That file is not on this device');
         });
       });
     }
@@ -730,26 +759,31 @@
       status: 'LPO Pending'
     };
 
+    var isCustomCat = !!v.category && CATEGORIES.indexOf(v.category) === -1;
+
     var html = appbar(editing ? 'Edit work' : 'Add work', '', editing ? '#/activity/' + id : '#/');
     html += '<main><div class="panel">' +
       '<div class="field"><label for="f-site2">Site</label><select id="f-site2">' +
         sites.map(function (s) { return '<option value="' + esc(s.id) + '"' + (s.id === v.site_id ? ' selected' : '') + '>' + esc(s.name) + '</option>'; }).join('') +
       '</select></div>' +
       '<div class="field"><label for="f-cat2">Type of work</label><select id="f-cat2">' +
-        CATEGORIES.map(function (c) { return '<option' + (c === v.category ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') +
-      '</select></div>' +
+        CATEGORIES.map(function (c) { return '<option value="' + esc(c) + '"' + (c === v.category ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') +
+        '<option value="__custom"' + (isCustomCat ? ' selected' : '') + '>' + esc(CUSTOM_CATEGORY_LABEL) + '</option>' +
+      '</select>' +
+      '<input id="f-cat-custom" placeholder="Type the kind of work, e.g. Mirror installation" value="' + esc(isCustomCat ? v.category : '') + '"' +
+        ' style="margin-top:8px' + (isCustomCat ? '' : ';display:none') + '" aria-label="Custom type of work"></div>' +
       '<div class="field"><label for="f-scope">Scope</label>' +
         '<textarea id="f-scope" placeholder="e.g. 5x bathroom shower partitions, master bath fixed glass">' + esc(v.scope_description) + '</textarea>' +
         '<div class="hint">Describe it the way the site team would say it.</div></div>' +
       '<div class="field"><label for="f-qty">Quantity (optional)</label><input id="f-qty" type="number" inputmode="numeric" value="' + esc(v.quantity === null ? '' : v.quantity) + '"></div>' +
       '<div class="row2">' +
-        '<div class="field"><label for="f-inst">Install date</label><input id="f-inst" type="date" value="' + esc((v.installation_date || '').slice(0, 10)) + '"></div>' +
-        '<div class="field"><label for="f-targ">Target finish</label><input id="f-targ" type="date" value="' + esc((v.target_finish_date || '').slice(0, 10)) + '"></div>' +
+        '<div class="field"><label for="f-inst">Install date</label><input id="f-inst" type="date" value="' + esc((realDate(v.installation_date) || '').slice(0, 10)) + '"></div>' +
+        '<div class="field"><label for="f-targ">Target finish</label><input id="f-targ" type="date" value="' + esc((realDate(v.target_finish_date) || '').slice(0, 10)) + '"></div>' +
       '</div>' +
       '<div class="field"><label for="f-stat">Status</label><select id="f-stat">' +
         STATUSES.map(function (s) { return '<option' + (s.name === v.status ? ' selected' : '') + '>' + esc(s.name) + '</option>'; }).join('') +
       '</select></div>' +
-      (editing ? '<div class="field"><label for="f-act">Actual finish</label><input id="f-act" type="date" value="' + esc((v.actual_finish_date || '').slice(0, 10)) + '"></div>' : '') +
+      (editing ? '<div class="field"><label for="f-act">Actual finish</label><input id="f-act" type="date" value="' + esc((realDate(v.actual_finish_date) || '').slice(0, 10)) + '"></div>' : '') +
       '<div class="btnrow">' +
         '<button class="btn btn-primary" id="save">' + (editing ? 'Save changes' : 'Add work') + '</button>' +
         '<button class="btn btn-ghost" data-nav="' + (editing ? '#/activity/' + id : '#/') + '">Cancel</button>' +
@@ -759,13 +793,26 @@
 
     root.innerHTML = html;
 
+    var catSel = document.getElementById('f-cat2');
+    var catCustom = document.getElementById('f-cat-custom');
+    catSel.addEventListener('change', function () {
+      var on = catSel.value === '__custom';
+      catCustom.style.display = on ? '' : 'none';
+      if (on) catCustom.focus();
+    });
+
     document.getElementById('save').addEventListener('click', function () {
       var scope = document.getElementById('f-scope').value.trim();
+      var category = catSel.value;
+      if (category === '__custom') {
+        category = catCustom.value.trim();
+        if (!category) { toast('Type the kind of work, or pick one from the list'); catCustom.focus(); return; }
+      }
       if (!scope) { toast('Add a short scope description'); return; }
       var qty = document.getElementById('f-qty').value;
       var payload = {
         site_id: document.getElementById('f-site2').value,
-        category: document.getElementById('f-cat2').value,
+        category: category,
         scope_description: scope,
         quantity: qty === '' ? null : Number(qty),
         installation_date: document.getElementById('f-inst').value || null,
@@ -892,7 +939,7 @@
     Promise.all([Store.getAll('sites'), Store.getAll('activities')]).then(function (res) {
       var siteCount = res[0].length, actCount = res[1].length;
 
-      var html = appbar('Settings', 'On this device', null, '');
+      var html = appbar('Settings', Sync.syncState().enabled ? 'Shared sync' : 'On this device', null, '');
       html += '<main>';
 
       // --- who ---
@@ -902,19 +949,39 @@
         '<div class="btnrow"><button class="btn btn-primary" id="save-name">Save name</button></div></div>';
 
       // --- where the data lives ---
+      var st = Sync.syncState();
+      var where, note;
+      if (!st.enabled) {
+        where = 'On this device only';
+        note = 'Shared sync is not switched on yet, so nothing is sent anywhere and other people cannot see this data. ' +
+          'Clearing the browser\'s data, or uninstalling the app, erases it — so keep a backup.';
+      } else if (st.status === 'error') {
+        where = 'Saved here — not syncing';
+        note = st.error || 'Could not reach the shared database.';
+      } else if (st.status === 'offline') {
+        where = 'Saved here — will sync when back online';
+        note = 'Changes made without signal are kept on this device and sent automatically when the connection returns.';
+      } else if (st.linked) {
+        where = 'Shared with the whole team';
+        note = 'Everyone using the tracker sees the same list. Changes appear on other phones within seconds, and anything entered without signal is sent once you are back online.';
+      } else {
+        where = 'Connecting to the shared list…';
+        note = 'Anything already on this device is being uploaded and merged with everyone else\'s.';
+      }
       html += '<div class="panel"><h2>Your data</h2>' +
         '<dl class="kv">' +
-        '<dt>Stored</dt><dd>On this device only</dd>' +
+        '<dt>Stored</dt><dd>' + esc(where) + '</dd>' +
         '<dt>Sites</dt><dd class="mono">' + siteCount + '</dd>' +
         '<dt>Work items</dt><dd class="mono">' + actCount + '</dd>' +
         '</dl>' +
-        '<p style="font-size:.85rem;color:var(--ink-3);margin:4px 0 0">Nothing is sent anywhere. It stays in this browser on this device. ' +
-        'Clearing the browser\'s data, or uninstalling the app, erases it — so keep a backup.</p></div>';
+        '<p style="font-size:.85rem;color:' + (st.status === 'error' ? 'var(--alert)' : 'var(--ink-3)') + ';margin:4px 0 0">' + esc(note) + '</p></div>';
 
       // --- backup / move between devices ---
       html += '<div class="panel"><h2>Backup &amp; transfer</h2>' +
-        '<p style="font-size:.85rem;color:var(--ink-3);margin-top:0">Export a backup file to keep it safe or move your work to another device. ' +
-        'Photos stay on the device that took them and are not included in the backup.</p>' +
+        '<p style="font-size:.85rem;color:var(--ink-3);margin-top:0">' +
+          (st.enabled ? 'Export a backup file as a safety copy. Importing one merges it into the shared list — the newer copy of each item wins. '
+                      : 'Export a backup file to keep it safe or move your work to another device. ') +
+        'Photos are not included in the backup file.</p>' +
         '<div class="btnrow">' +
           '<button class="btn btn-primary" id="backup">Export backup</button>' +
           '<button class="btn btn-ghost" id="restore">Import backup</button>' +
@@ -938,8 +1005,11 @@
 
       // --- danger ---
       html += '<div class="panel"><h2>Reset</h2>' +
-        '<p style="font-size:.85rem;color:var(--ink-3);margin-top:0">Erase everything on this device and start empty. Export a backup first if you might want it back.</p>' +
-        '<div class="btnrow"><button class="btn btn-danger btn-block" id="reset">Erase all data on this device</button></div></div>';
+        '<p style="font-size:.85rem;color:var(--ink-3);margin-top:0">' +
+          (st.enabled ? 'Clear this device\'s copy. The shared list is not touched and downloads again when the app reopens. Anything not yet sent is lost.'
+                      : 'Erase everything on this device and start empty. Export a backup first if you might want it back.') + '</p>' +
+        '<div class="btnrow"><button class="btn btn-danger btn-block" id="reset">' +
+          (st.enabled ? 'Clear this device\'s copy' : 'Erase all data on this device') + '</button></div></div>';
 
       html += footer();
       html += '</main>' + tabbar('set');
@@ -968,8 +1038,9 @@
       restoreFile.addEventListener('change', function () {
         var f = restoreFile.files && restoreFile.files[0];
         if (!f) return;
-        var mode = confirm('Import backup.\n\nOK = REPLACE everything on this device with the backup.\nCancel = MERGE the backup into what is already here.')
-          ? 'replace' : 'merge';
+        var mode = Sync.syncState().linked ? 'merge'
+          : (confirm('Import backup.\n\nOK = REPLACE everything on this device with the backup.\nCancel = MERGE the backup into what is already here.')
+             ? 'replace' : 'merge');
         var reader = new FileReader();
         reader.onload = function () {
           var dump;
@@ -1001,7 +1072,9 @@
       });
 
       document.getElementById('reset').addEventListener('click', function () {
-        if (!confirm('Erase ALL data on this device? This cannot be undone. Export a backup first if you want to keep it.')) return;
+        if (!confirm(Sync.syncState().enabled
+          ? 'Clear this device\'s copy? The shared list stays as it is and downloads again.'
+          : 'Erase ALL data on this device? This cannot be undone. Export a backup first if you want to keep it.')) return;
         Sync.resetDevice().then(function () { location.reload(); });
       });
     });
@@ -1035,8 +1108,8 @@
       rows.push([
         s.name || '', s.community || '', s.main_contractor || '',
         a.category || '', a.scope_description || '', a.quantity === null || a.quantity === undefined ? '' : a.quantity,
-        (a.installation_date || '').slice(0, 10), (a.target_finish_date || '').slice(0, 10),
-        (a.actual_finish_date || '').slice(0, 10), a.status || ''
+        (realDate(a.installation_date) || '').slice(0, 10), (realDate(a.target_finish_date) || '').slice(0, 10),
+        (realDate(a.actual_finish_date) || '').slice(0, 10), a.status || ''
       ]);
     });
     var csv = rows.map(function (r) {
@@ -1110,7 +1183,30 @@
     }
   });
 
-  window.addEventListener('hashchange', route);
+  window.addEventListener('hashchange', refreshAndRender);
+
+  /* Someone else changed something (or the sync status moved). Redraw —
+     unless the person is part-way through typing, in which case the fresh
+     data shows as soon as they move to another screen. */
+  function isBusy() {
+    var h = location.hash || '';
+    if (/\/(new|edit|team)(\?|$)/.test(h)) return true;
+    var a = document.activeElement;
+    if (a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && a.type !== 'checkbox') || a.tagName === 'SELECT')) return true;
+    var up = document.getElementById('up-text');
+    return !!(up && up.value.trim());
+  }
+  Sync.on(function (evt) {
+    if (!state.user || document.body.classList.contains('no-nav')) return;
+    if (evt === 'data:remote') {
+      loadLocal().then(function () {
+        state.profile = profileById(state.user.id) || state.profile;
+        if (!isBusy()) { var y = window.scrollY; route(); window.scrollTo(0, y); }
+      });
+    } else if (evt === 'sync:status') {
+      if (!isBusy()) { var y2 = window.scrollY; route(); window.scrollTo(0, y2); }
+    }
+  });
 
   /* =====================================================================
      Boot
@@ -1118,6 +1214,7 @@
   function boot() {
     Sync.ensureSession().then(function (sess) {
       state.user = sess.user;
+      Sync.initCloud();
       return loadLocal().then(function () {
         state.profile = profileById(state.user.id) || { full_name: '', role: 'admin' };
         if (!hasName()) { viewIdentity(); return; }
